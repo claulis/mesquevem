@@ -1,0 +1,22 @@
+name: compras
+description: Registro de compras com previsão do mês seguinte
+publish_to: none
+version: 1.0.0+1
+
+environment:
+  sdk: ^3.0.0
+
+dependencies:
+  file_picker: ^13.1.0
+  flutter:
+    sdk: flutter
+  provider: ^6.1.5+1
+  shared_preferences: ^2.2.0
+
+dev_dependencies:
+  flutter_lints: ^6.0.0
+  flutter_test:
+    sdk: flutter
+
+flutter:
+  uses-material-design: true
