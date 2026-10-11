@@ -7,7 +7,9 @@ void main() {
 
   test('sem histórico fechado: total do mês atual', () {
     expect(previsao([], hoje).$1, 0);
-    expect(previsao([Compra(DateTime(2026, 10, 1), 50)], hoje).$1, 50);
+    final (v, m) = previsao([Compra(DateTime(2026, 10, 1), 50)], hoje);
+    expect(v, 50);
+    expect(m, contains('parcial')); // não se passa por previsão completa
   });
 
   test('< 6 meses: média móvel', () {

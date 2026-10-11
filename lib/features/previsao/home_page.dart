@@ -14,33 +14,53 @@ class HomePage extends StatelessWidget {
         previsao(context.watch<Store>().compras, DateTime.now());
     return Scaffold(
       appBar: AppBar(title: const Text('Previsão')),
+      // rolável: com fonte grande o conteúdo pode não caber na tela
       body: Center(
-        child: Column(mainAxisSize: MainAxisSize.min, children: [
-          const Text('Previsão para o mês que vem'),
-          const SizedBox(height: 8),
-          Text(fmtValor(valor),
-              style: Theme.of(context).textTheme.displayMedium),
-          const SizedBox(height: 8),
-          Text('Método: $metodo', style: Theme.of(context).textTheme.bodySmall),
-        ]),
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(16),
+          child: Column(mainAxisSize: MainAxisSize.min, children: [
+            const Text('Previsão para o mês que vem',
+                textAlign: TextAlign.center),
+            const SizedBox(height: 8),
+            Text(fmtValor(valor),
+                textAlign: TextAlign.center,
+                style: Theme.of(context).textTheme.displayMedium),
+            const SizedBox(height: 8),
+            Text('Método: $metodo',
+                textAlign: TextAlign.center,
+                style: Theme.of(context).textTheme.bodySmall),
+          ]),
+        ),
       ),
-      bottomNavigationBar: BottomAppBar(
-        child: Row(children: [
-          for (final f in features)
-            Expanded(
-              child: InkWell(
-                onTap: () => Navigator.pushNamed(context, f.rota),
-                child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(f.icone),
-                      Text(f.rotulo,
-                          textAlign: TextAlign.center,
-                          style: const TextStyle(fontSize: 12)),
-                    ]),
-              ),
-            ),
-        ]),
+      // altura pelo conteúdo (não fixa), para aguentar fonte grande do sistema
+      bottomNavigationBar: Material(
+        // mesma cor da BottomAppBar do Material 3
+        color: Theme.of(context).colorScheme.surfaceContainer,
+        child: SafeArea(
+          child: IntrinsicHeight(
+            child:
+                Row(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+              for (final f in features)
+                Expanded(
+                  child: InkWell(
+                    onTap: () => Navigator.pushNamed(context, f.rota),
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                      child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(f.icone),
+                            Text(f.rotulo,
+                                textAlign: TextAlign.center,
+                                style: const TextStyle(fontSize: 12)),
+                          ]),
+                    ),
+                  ),
+                ),
+            ]),
+          ),
+        ),
       ),
     );
   }

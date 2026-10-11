@@ -3,6 +3,9 @@ import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../core/confirmar.dart';
+import '../../core/ambiente.dart';
+import '../../core/erros.dart';
+import '../../core/salvar.dart';
 import '../../data/repositorio.dart';
 import '../../state/store.dart';
 
@@ -12,16 +15,23 @@ typedef SalvarArquivo = Future<bool> Function(String nome, String texto);
 /// Devolve null se o usuário cancelou.
 typedef AbrirArquivo = Future<String?> Function();
 
-Future<bool> salvarComSeletor(String nome, String texto) async =>
-    await FilePicker.saveFile(
-        fileName: nome,
-        bytes: utf8.encode(texto),
-        mimeType: 'application/json') !=
-    null;
+Future<bool> salvarComSeletor(String nome, String texto) => doAmbiente(
+    () async =>
+        await FilePicker.saveFile(
+            fileName: nome,
+            bytes: utf8.encode(texto),
+            mimeType: 'application/json') !=
+        null,
+    'erro do seletor de arquivos');
 
+/// Bytes que não são UTF-8 lançam [FormatException] (arquivo inválido), não
+/// [ErroDoApp] (problema do ambiente).
 Future<String?> abrirComSeletor() async {
-  final f = await FilePicker.pickFile();
-  return f == null ? null : utf8.decode(await f.readAsBytes());
+  final bytes = await doAmbiente(() async {
+    final f = await FilePicker.pickFile();
+    return f == null ? null : await f.readAsBytes();
+  }, 'erro do seletor de arquivos');
+  return bytes == null ? null : utf8.decode(bytes);
 }
 
 class BackupPage extends StatelessWidget {
@@ -36,38 +46,44 @@ class BackupPage extends StatelessWidget {
     final store = context.read<Store>();
     final msg = ScaffoldMessenger.of(context);
     final hoje = DateTime.now().toIso8601String().substring(0, 10);
-    try {
-      if (await salvarArquivo('compras-backup-$hoje.json', store.exportar())) {
+    await avisandoFalha(context, () async {
+      final texto = await store.exportar();
+      if (await salvarArquivo('compras-backup-$hoje.json', texto)) {
         msg.showSnackBar(const SnackBar(content: Text('Backup salvo')));
       }
-    } catch (e) {
-      msg.showSnackBar(SnackBar(content: Text('Não foi possível salvar: $e')));
-    }
+    }, falha: 'Não foi possível salvar o backup');
   }
 
   Future<void> _importar(BuildContext context) async {
     final store = context.read<Store>();
     final msg = ScaffoldMessenger.of(context);
-    final Dados dados;
-    try {
-      final texto = await abrirArquivo();
-      if (texto == null) return;
-      dados = Dados.deTexto(texto);
-    } catch (e) {
-      msg.showSnackBar(SnackBar(
-          content: Text('Arquivo inválido, nada foi alterado. ($e)')));
-      return;
-    }
+    Dados? dados;
+    final aberto = await avisandoFalha(context, () async {
+      try {
+        // dentro do try: arquivo que não é UTF-8 também é "arquivo inválido"
+        final texto = await abrirArquivo();
+        if (texto != null) dados = Dados.deTexto(texto);
+      } on DadosDeVersaoMaisNova {
+        throw const ErroDoApp('o backup é de uma versão mais nova do app; '
+            'atualize o app para importá-lo');
+      } on FormatException catch (e) {
+        throw ErroDoApp('arquivo inválido (${e.message})');
+      }
+    }, falha: 'Não foi possível importar, nada foi alterado');
+    final lido = dados;
+    if (!aberto || lido == null) return;
     if (!context.mounted) return;
     final ok = await confirmar(
         context,
         'Substituir TODOS os dados atuais (${store.compras.length} compras e '
-        'categorias) pelos do arquivo (${dados.compras.length} compras)?\n\n'
+        'categorias) pelos do arquivo (${lido.compras.length} compras)?\n\n'
         'Exporte antes se quiser guardar os dados atuais.',
         acao: 'Importar');
-    if (!ok) return;
-    await store.importar(dados);
-    msg.showSnackBar(const SnackBar(content: Text('Dados importados')));
+    if (!ok || !context.mounted) return;
+    if (await avisandoFalha(context, () => store.importar(lido),
+        falha: 'Não foi possível importar, nada foi alterado')) {
+      msg.showSnackBar(const SnackBar(content: Text('Dados importados')));
+    }
   }
 
   @override
@@ -78,7 +94,8 @@ class BackupPage extends StatelessWidget {
     return Scaffold(
       appBar: AppBar(title: const Text('Backup')),
       body: ListView(padding: const EdgeInsets.all(16), children: [
-        Text('Neste aparelho: ${store.compras.length} compras e $nCat categorias.'),
+        Text(
+            'Neste aparelho: ${store.compras.length} compras e $nCat categorias.'),
         const SizedBox(height: 8),
         Text(
             'O arquivo de backup leva todos os dados e não é criptografado: '

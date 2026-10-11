@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import '../../core/confirmar.dart';
+import '../../core/ambiente.dart';
+import '../../core/salvar.dart';
 import '../../data/repositorio.dart';
 import '../../state/store.dart';
 import '../previsao/home_page.dart';
@@ -29,6 +31,17 @@ class _InicioPageState extends State<InicioPage> {
         _carga = acao();
       });
 
+  // se falhar, continua na mesma tela de erro (com os mesmos botões) e avisa
+  Future<void> _recomecar() async {
+    if (await avisandoFalha(context, _store.recomecar,
+            falha: 'Não foi possível começar do zero') &&
+        mounted) {
+      setState(() {
+        _carga = Future.value(); // corpo em bloco: ver _repetir
+      });
+    }
+  }
+
   @override
   Widget build(BuildContext context) => FutureBuilder(
         future: _carga,
@@ -41,7 +54,7 @@ class _InicioPageState extends State<InicioPage> {
             return ErroPage(
               erro: s.error!,
               tentarDeNovo: () => _repetir(_store.carregar),
-              recomecar: () => _repetir(_store.recomecar),
+              recomecar: _recomecar,
             );
           }
           return const HomePage();
@@ -70,12 +83,18 @@ class ErroPage extends StatelessWidget {
         Icon(Icons.error_outline,
             size: 48, color: Theme.of(context).colorScheme.error),
         const SizedBox(height: 16),
-        Text(corrompido != null
-            ? 'Os dados salvos não puderam ser lidos. '
-                'Uma cópia deles foi guardada no aparelho.'
-            : 'Não foi possível carregar os dados.'),
+        Text(switch (corrompido) {
+          null => 'Não foi possível carregar os dados.',
+          DadosCorrompidos(copiaGuardada: true) =>
+            'Os dados salvos não puderam ser lidos. '
+                'Uma cópia deles foi guardada no aparelho.',
+          _ => 'Os dados salvos não puderam ser lidos, e não foi possível '
+              'guardar uma cópia (armazenamento cheio?). Use "Copiar dados" '
+              'antes de começar do zero, para não perdê-los.',
+        }),
         const SizedBox(height: 8),
-        Text('$erro', style: Theme.of(context).textTheme.bodySmall),
+        Text(mensagem(corrompido?.causa ?? erro),
+            style: Theme.of(context).textTheme.bodySmall),
         const SizedBox(height: 24),
         FilledButton.icon(
             icon: const Icon(Icons.refresh),
@@ -90,7 +109,8 @@ class ErroPage extends StatelessWidget {
               final msg = ScaffoldMessenger.of(context);
               await Clipboard.setData(ClipboardData(text: corrompido.bruto));
               msg.showSnackBar(const SnackBar(
-                  content: Text('Dados copiados para a área de transferência')));
+                  content:
+                      Text('Dados copiados para a área de transferência')));
             },
           ),
           const SizedBox(height: 8),
@@ -98,10 +118,16 @@ class ErroPage extends StatelessWidget {
             icon: const Icon(Icons.restart_alt),
             label: const Text('Começar do zero'),
             onPressed: () async {
+              // sem cópia, é a única saída (armazenamento cheio), mas a
+              // confirmação deixa claro que os dados se perdem
               if (await confirmar(
                   context,
-                  'Apagar os dados ilegíveis e começar do zero? '
-                  'A cópia guardada continua no aparelho.')) {
+                  corrompido.copiaGuardada
+                      ? 'Apagar os dados ilegíveis e começar do zero? '
+                          'A cópia guardada continua no aparelho.'
+                      : 'NÃO há cópia dos dados ilegíveis: eles serão perdidos. '
+                          'Use "Copiar dados" antes. Apagar e começar do zero?',
+                  acao: 'Apagar')) {
                 recomecar();
               }
             },

@@ -17,10 +17,14 @@ double _soma(Iterable<double> xs) => xs.fold(0.0, (a, b) => a + b);
   }
   final atual = _mes(hoje);
   final fechados = totais.keys.where((k) => k < atual);
-  if (fechados.isEmpty) return (totais[atual] ?? 0, 'total do mês atual');
+  if (fechados.isEmpty) {
+    return (totais[atual] ?? 0, 'total parcial do mês atual (sem histórico)');
+  }
 
   // série contínua: meses sem compra contam como zero
-  final s = [for (var k = fechados.reduce(min); k < atual; k++) totais[k] ?? 0.0];
+  final s = [
+    for (var k = fechados.reduce(min); k < atual; k++) totais[k] ?? 0.0
+  ];
   final n = s.length;
 
   if (n < 6) {

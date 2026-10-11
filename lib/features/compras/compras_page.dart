@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../core/confirmar.dart';
 import '../../core/format.dart';
+import '../../core/salvar.dart';
 import '../../data/compra.dart';
 import '../../state/store.dart';
 
@@ -26,13 +27,15 @@ class ComprasPage extends StatelessWidget {
   Future<void> _form(BuildContext context, [Compra? c]) async {
     final store = context.read<Store>();
     final desc = TextEditingController(text: c?.descricao);
-    final valor = TextEditingController(
-        text: c?.valor.toStringAsFixed(2).replaceAll('.', ',') ?? '');
+    final valorInicial = c == null ? '' : fmtNumero(c.valor);
+    final valor = TextEditingController(text: valorInicial);
     var data = c?.data ?? DateTime.now();
     String? cat = (c?.categoria ?? '').isEmpty ? null : c!.categoria;
     String? ev = (c?.evento ?? '').isEmpty ? null : c!.evento;
+    String? erroValor;
 
-    final ok = await showDialog<bool>(
+    // o diálogo devolve o valor já validado, ou null se cancelado
+    final v = await showDialog<double>(
       context: context,
       builder: (ctx) => StatefulBuilder(
         builder: (ctx, setD) => AlertDialog(
@@ -44,12 +47,18 @@ class ComprasPage extends StatelessWidget {
                   decoration: const InputDecoration(labelText: 'Descrição')),
               TextField(
                   controller: valor,
+                  onChanged: (_) {
+                    if (erroValor != null) setD(() => erroValor = null);
+                  },
                   keyboardType:
                       const TextInputType.numberWithOptions(decimal: true),
-                  decoration: const InputDecoration(labelText: 'Valor (R\$)')),
+                  decoration: InputDecoration(
+                      labelText: 'Valor (R\$)', errorText: erroValor)),
               const SizedBox(height: 8),
-              _drop('Categoria da compra',
-                  store.categorias(TipoCategoria.compra), cat,
+              _drop(
+                  'Categoria da compra',
+                  store.categorias(TipoCategoria.compra),
+                  cat,
                   (v) => setD(() => cat = v)),
               _drop('Evento', store.categorias(TipoCategoria.evento), ev,
                   (v) => setD(() => ev = v)),
@@ -61,8 +70,11 @@ class ComprasPage extends StatelessWidget {
                   final d = await showDatePicker(
                       context: ctx,
                       initialDate: data,
-                      firstDate: DateTime(2000),
-                      lastDate: DateTime(2100));
+                      // a data atual (ex.: de um backup) tem de caber no intervalo
+                      firstDate:
+                          data.isBefore(DateTime(2000)) ? data : DateTime(2000),
+                      lastDate:
+                          data.isAfter(DateTime(2100)) ? data : DateTime(2100));
                   if (d != null) setD(() => data = d);
                 },
               ),
@@ -74,9 +86,17 @@ class ComprasPage extends StatelessWidget {
                 child: const Text('Cancelar')),
             FilledButton(
               onPressed: () {
-                final v = double.tryParse(valor.text.replaceAll(',', '.'));
-                if (v == null || v <= 0) return;
-                Navigator.pop(ctx, true);
+                try {
+                  // valor não mexido: mantém o original, mesmo que hoje
+                  // lerValor o recusasse (dados antigos, mais de 2 casas)
+                  Navigator.pop(
+                      ctx,
+                      c != null && valor.text == valorInicial
+                          ? c.valor
+                          : lerValor(valor.text));
+                } on FormatException catch (e) {
+                  setD(() => erroValor = e.message);
+                }
               },
               child: const Text('Salvar'),
             ),
@@ -84,15 +104,19 @@ class ComprasPage extends StatelessWidget {
         ),
       ),
     );
-    if (ok != true) return;
-    store.salvarCompra(Compra(
-      data,
-      double.parse(valor.text.replaceAll(',', '.')),
-      id: c?.id,
-      descricao: desc.text.trim(),
-      categoria: cat ?? '',
-      evento: ev ?? '',
-    ));
+    if (v == null || !context.mounted) return;
+    await avisandoFalha(
+        context,
+        () => store.salvarCompra(
+            Compra(
+              data,
+              v,
+              id: c?.id,
+              descricao: desc.text.trim(),
+              categoria: cat ?? '',
+              evento: ev ?? '',
+            ),
+            edicao: c != null));
   }
 
   @override
@@ -124,7 +148,10 @@ class ComprasPage extends StatelessWidget {
                         if (!await confirmar(context, 'Excluir esta compra?')) {
                           return;
                         }
-                        store.removerCompra(c.id);
+                        if (!context.mounted) return;
+                        await avisandoFalha(
+                            context, () => store.removerCompra(c.id),
+                            falha: 'Não foi possível excluir');
                       },
                     ),
                   ]),

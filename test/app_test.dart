@@ -20,8 +20,8 @@ class RepositorioComFalha extends RepositorioMemoria {
 }
 
 Future<void> abrir(WidgetTester tester, RepositorioMemoria repo) async {
-  await tester.pumpWidget(ChangeNotifierProvider(
-      create: (_) => Store(repo), child: const App()));
+  await tester.pumpWidget(
+      ChangeNotifierProvider(create: (_) => Store(repo), child: const App()));
   await tester.pumpAndSettle();
 }
 
@@ -65,22 +65,72 @@ void main() {
     expect(find.text('Toque em + para adicionar'), findsOneWidget);
   });
 
+  testWidgets('dados corrompidos: detalhe sem prefixo técnico', (tester) async {
+    await abrir(
+        tester,
+        RepositorioComFalha(const DadosCorrompidos(
+            '{lixo', FormatException('campo ruim'),
+            copiaGuardada: true)));
+    expect(find.text('campo ruim'), findsOneWidget);
+    expect(find.textContaining('FormatException'), findsNothing);
+  });
+
+  testWidgets('corrompido sem cópia: copiar e começar do zero com aviso',
+      (tester) async {
+    final repo = RepositorioComFalha(const DadosCorrompidos(
+        '{lixo', FormatException('x'),
+        copiaGuardada: false));
+    await abrir(tester, repo);
+    expect(find.text('Copiar dados'), findsOneWidget);
+    expect(find.textContaining('não foi possível guardar uma cópia'),
+        findsOneWidget);
+
+    await tester.tap(find.text('Começar do zero'));
+    await tester.pumpAndSettle();
+    expect(find.textContaining('NÃO há cópia'), findsOneWidget);
+    await tester.tap(find.text('Cancelar'));
+    await tester.pumpAndSettle();
+    expect(find.text('Erro ao abrir'), findsOneWidget);
+    expect(repo.salvamentos, 0);
+  });
+
+  testWidgets('começar do zero que falha: fica na tela de erro e avisa',
+      (tester) async {
+    final repo = RepositorioComFalha(const DadosCorrompidos(
+        '{lixo', FormatException('x'),
+        copiaGuardada: true))
+      ..falhaAoSalvar = const FalhaAoSalvar('disco cheio');
+    await abrir(tester, repo);
+    await tester.tap(find.text('Começar do zero'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Apagar'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Não foi possível começar do zero: disco cheio'),
+        findsOneWidget);
+    expect(find.text('Erro ao abrir'), findsOneWidget);
+    expect(find.text('Copiar dados'), findsOneWidget);
+    expect(find.text('Começar do zero'), findsOneWidget);
+  });
+
   testWidgets('dados corrompidos: começar do zero abre a home', (tester) async {
-    final repo = RepositorioComFalha(
-        const DadosCorrompidos('{lixo', FormatException('inválido')));
+    final repo = RepositorioComFalha(const DadosCorrompidos(
+        '{lixo', FormatException('inválido'),
+        copiaGuardada: true));
     await abrir(tester, repo);
 
     expect(find.text('Erro ao abrir'), findsOneWidget);
     await tester.tap(find.text('Começar do zero'));
     await tester.pumpAndSettle();
-    await tester.tap(find.text('Excluir')); // confirmação
+    await tester.tap(find.text('Apagar')); // confirmação
     await tester.pumpAndSettle();
 
     expect(find.text('Previsão para o mês que vem'), findsOneWidget);
     expect(repo.salvamentos, 1);
   });
 
-  testWidgets('falha passageira: só tentar de novo, sem apagar', (tester) async {
+  testWidgets('falha passageira: só tentar de novo, sem apagar',
+      (tester) async {
     final repo = RepositorioComFalha(Exception('disco indisponível'));
     await abrir(tester, repo);
 
@@ -91,5 +141,31 @@ void main() {
 
     expect(find.text('Previsão para o mês que vem'), findsOneWidget);
     expect(repo.salvamentos, 0);
+  });
+
+  testWidgets('dados de versão mais nova: sem "começar do zero"',
+      (tester) async {
+    final repo = RepositorioComFalha(DadosDeVersaoMaisNova(versaoAtual + 1));
+    await abrir(tester, repo);
+
+    expect(find.text('Erro ao abrir'), findsOneWidget);
+    expect(find.textContaining('atualize o app'), findsOneWidget);
+    expect(find.text('Começar do zero'), findsNothing);
+    expect(find.text('Copiar dados'), findsNothing);
+  });
+
+  testWidgets('barra inferior aguenta fonte grande e tela estreita',
+      (tester) async {
+    tester.view.physicalSize = const Size(360, 640);
+    tester.view.devicePixelRatio = 1;
+    tester.platformDispatcher.textScaleFactorTestValue = 2;
+    addTearDown(tester.view.reset);
+    addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
+    await abrir(tester, RepositorioMemoria());
+
+    expect(tester.takeException(), isNull);
+    await tester.tap(find.text('Backup'));
+    await tester.pumpAndSettle();
+    expect(find.widgetWithText(AppBar, 'Backup'), findsOneWidget);
   });
 }

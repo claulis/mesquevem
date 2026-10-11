@@ -1,9 +1,17 @@
+import 'dart:collection';
 import 'dart:convert';
 import 'package:flutter/foundation.dart';
+import '../core/erros.dart';
 import '../data/compra.dart';
 import '../data/repositorio.dart';
 
 enum TipoCategoria { compra, evento }
+
+/// Lançada quando uma alteração não pode ser feita no estado atual (ex.: nome
+/// de categoria que passou a existir enquanto o diálogo estava aberto).
+class OperacaoRecusada extends ErroDoApp {
+  const OperacaoRecusada(super.motivo);
+}
 
 /// Estado do app e regras de negócio. As telas leem daqui e chamam os métodos;
 /// nunca alteram as listas diretamente.
@@ -12,81 +20,136 @@ class Store extends ChangeNotifier {
   Dados _d = Dados.padrao();
   Store(this._repo);
 
-  List<Compra> get compras => List.unmodifiable(_d.compras);
-  List<String> categorias(TipoCategoria t) => List.unmodifiable(_lista(t));
-  List<String> _lista(TipoCategoria t) =>
-      t == TipoCategoria.compra ? _d.catCompra : _d.catEvento;
+  // visões sem cópia: _d nunca é alterado no lugar, só substituído
+  List<Compra> get compras => UnmodifiableListView(_d.compras);
+  List<String> categorias(TipoCategoria t) =>
+      UnmodifiableListView(_lista(_d, t));
+  static List<String> _lista(Dados d, TipoCategoria t) =>
+      t == TipoCategoria.compra ? d.catCompra : d.catEvento;
 
-  Future<void> carregar() async {
-    _d = await _repo.carregar();
-    _ordenar();
-    notifyListeners();
-  }
+  /// Lê do repositório. Entra na mesma fila das alterações, para nunca
+  /// trocar os dados no meio de um salvamento.
+  Future<void> carregar() => _naFila(() async {
+        final d = await _repo.carregar();
+        _ordenar(d);
+        _d = d;
+        notifyListeners();
+      });
 
-  /// Todos os dados (compras e categorias) no formato do backup.
-  String exportar() => const JsonEncoder.withIndent('  ').convert(_d);
+  /// Todos os dados (compras e categorias) no formato do backup. Espera os
+  /// salvamentos pendentes, para exportar só o que já está gravado.
+  Future<String> exportar() =>
+      _naFila(() async => const JsonEncoder.withIndent('  ').convert(_d));
 
   /// Substitui todos os dados pelos de um backup já validado ([Dados.deTexto]).
-  Future<void> importar(Dados dados) {
-    _d = dados;
-    return _salvar();
+  Future<void> importar(Dados dados) => _naFila(() => _trocar(dados));
+
+  /// Descarta os dados e volta ao padrão. Só para depois de [DadosCorrompidos]
+  /// e com confirmação do usuário: se [DadosCorrompidos.copiaGuardada] for
+  /// false, não há cópia do original e ele se perde.
+  Future<void> recomecar() => _naFila(() => _trocar(Dados.padrao()));
+
+  static void _ordenar(Dados d) =>
+      d.compras.sort((a, b) => b.data.compareTo(a.data));
+
+  // Carga, exportação e alterações rodam uma por vez, cada uma partindo do
+  // estado deixado pela anterior.
+  Future<void> _fila = Future.value();
+
+  Future<T> _naFila<T>(Future<T> Function() tarefa) {
+    final r = _fila.then((_) => tarefa());
+    _fila = r.then((_) {}, onError: (_) {});
+    return r;
   }
 
-  /// Descarta os dados e volta ao padrão. Só para depois de [DadosCorrompidos]:
-  /// o repositório já guardou uma cópia do original.
-  Future<void> recomecar() {
-    _d = Dados.padrao();
-    return _salvar();
-  }
-
-  void _ordenar() => _d.compras.sort((a, b) => b.data.compareTo(a.data));
-
-  Future<void> _salvar() {
-    _ordenar();
+  /// Salva [novo] e só então o põe no lugar e avisa a tela. Se salvar falhar,
+  /// o estado e a tela ficam como estavam: nunca mostram o que não foi gravado.
+  Future<void> _trocar(Dados novo) async {
+    _ordenar(novo);
+    await _repo.salvar(novo);
+    _d = novo;
     notifyListeners();
-    return _repo.salvar(_d);
   }
 
-  /// Insere ou, se já existir uma compra com o mesmo id, substitui.
-  Future<void> salvarCompra(Compra c) {
-    final i = _d.compras.indexWhere((x) => x.id == c.id);
-    if (i < 0) {
-      _d.compras.add(c);
-    } else {
-      _d.compras[i] = c;
-    }
-    return _salvar();
-  }
+  /// Aplica [mudar] numa cópia e a salva com [_trocar], verificando antes,
+  /// contra o estado do momento (não o de quando a tela chamou):
+  /// - [semEfeito] true: nada a fazer, termina sem erro;
+  /// - [recusa] com motivo: lança [OperacaoRecusada].
+  Future<void> _alterar(void Function(Dados d) mudar,
+          {bool Function()? semEfeito, String? Function()? recusa}) =>
+      _naFila(() async {
+        if (semEfeito?.call() ?? false) return;
+        final motivo = recusa?.call();
+        if (motivo != null) throw OperacaoRecusada(motivo);
+        final novo = _d.copia();
+        mudar(novo);
+        await _trocar(novo);
+      });
 
-  Future<void> removerCompra(String id) {
-    _d.compras.removeWhere((c) => c.id == id);
-    return _salvar();
-  }
+  /// Insere ou, se já existir uma compra com o mesmo id, substitui. Com
+  /// [edicao], a compra tem de existir: se foi excluída enquanto a edição
+  /// esperava, lança [OperacaoRecusada] em vez de recriá-la.
+  Future<void> salvarCompra(Compra c, {bool edicao = false}) => _alterar((d) {
+        final i = d.compras.indexWhere((x) => x.id == c.id);
+        if (i < 0) {
+          d.compras.add(c);
+        } else {
+          d.compras[i] = c;
+        }
+      },
+          recusa: () => edicao && !_d.compras.any((x) => x.id == c.id)
+              ? 'esta compra foi excluída'
+              : null);
 
-  Future<void> adicionarCategoria(TipoCategoria t, String nome) async {
+  /// Compra que já não existe: nada a fazer.
+  Future<void> removerCompra(String id) =>
+      _alterar((d) => d.compras.removeWhere((c) => c.id == id),
+          semEfeito: () => !_d.compras.any((c) => c.id == id));
+
+  /// Motivo para recusar [nome] como categoria do tipo [t], ou null se serve.
+  /// [atual] é o nome que está sendo renomeado (manter o mesmo nome é válido).
+  String? nomeInvalido(TipoCategoria t, String nome, {String? atual}) {
     nome = nome.trim();
-    if (nome.isEmpty || _lista(t).contains(nome)) return;
-    _lista(t).add(nome);
-    await _salvar();
-  }
-
-  /// Renomeia também nas compras já cadastradas.
-  Future<void> renomearCategoria(
-      TipoCategoria t, String antigo, String novo) async {
-    novo = novo.trim();
-    final l = _lista(t);
-    final i = l.indexOf(antigo);
-    if (i < 0 || novo.isEmpty || l.contains(novo)) return;
-    l[i] = novo;
-    for (final c in _d.compras) {
-      if (t == TipoCategoria.evento && c.evento == antigo) c.evento = novo;
-      if (t == TipoCategoria.compra && c.categoria == antigo) c.categoria = novo;
+    if (nome.isEmpty) return 'Informe um nome';
+    if (nome != atual && _lista(_d, t).contains(nome)) {
+      return 'Já existe uma categoria com esse nome';
     }
-    await _salvar();
+    return null;
   }
 
-  Future<void> removerCategoria(TipoCategoria t, String nome) {
-    _lista(t).remove(nome);
-    return _salvar();
+  /// Lança [OperacaoRecusada] se o nome for vazio ou já existir. A tela valida
+  /// antes ([nomeInvalido]); aqui vale o estado no momento de aplicar.
+  Future<void> adicionarCategoria(TipoCategoria t, String nome) {
+    nome = nome.trim();
+    return _alterar((d) => _lista(d, t).add(nome),
+        recusa: () => nomeInvalido(t, nome));
   }
+
+  /// Renomeia também nas compras já cadastradas. Manter o nome não faz nada;
+  /// nome inválido ou categoria que não existe mais lança [OperacaoRecusada].
+  Future<void> renomearCategoria(TipoCategoria t, String antigo, String novo) {
+    novo = novo.trim();
+    return _alterar((d) {
+      final l = _lista(d, t);
+      l[l.indexOf(antigo)] = novo;
+      for (var i = 0; i < d.compras.length; i++) {
+        final c = d.compras[i];
+        if (t == TipoCategoria.evento && c.evento == antigo) {
+          d.compras[i] = c.copiaCom(evento: novo);
+        }
+        if (t == TipoCategoria.compra && c.categoria == antigo) {
+          d.compras[i] = c.copiaCom(categoria: novo);
+        }
+      }
+    },
+        semEfeito: () => novo == antigo,
+        recusa: () => _lista(_d, t).contains(antigo)
+            ? nomeInvalido(t, novo)
+            : 'A categoria "$antigo" não existe mais');
+  }
+
+  /// Categoria que já não existe: nada a fazer.
+  Future<void> removerCategoria(TipoCategoria t, String nome) =>
+      _alterar((d) => _lista(d, t).remove(nome),
+          semEfeito: () => !_lista(_d, t).contains(nome));
 }
