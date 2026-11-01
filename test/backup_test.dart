@@ -185,7 +185,7 @@ void main() {
     final repo = RepositorioMemoria()
       ..dados.compras.add(Compra(DateTime(2026, 9, 1), 7));
     await abrirBackup(tester, repo, salvar: (nome, texto) async {
-      expect(nome, startsWith('compras-backup-'));
+      expect(nome, startsWith('mesquevem-backup-'));
       salvo = texto;
       return true;
     });

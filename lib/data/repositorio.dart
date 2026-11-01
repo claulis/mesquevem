@@ -68,7 +68,7 @@ class Dados {
     if (texto.startsWith('\uFEFF')) texto = texto.substring(1);
     final j = jsonDecode(texto);
     if (j is! Map<String, dynamic>) {
-      throw const FormatException('não é um backup do app Compras');
+      throw const FormatException('não é um backup do app Mês que Vem');
     }
     return Dados.fromJson(j);
   }

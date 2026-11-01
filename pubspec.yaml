@@ -1,5 +1,5 @@
 name: compras
-description: Registro de compras com previsão do mês seguinte
+description: "Mês que Vem: registro de compras da família com previsão do mês seguinte"
 publish_to: none
 version: 1.0.0+1
 

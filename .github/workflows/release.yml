@@ -16,6 +16,8 @@ jobs:
         with: { channel: stable, cache: true }
       - run: echo "VERSION=$(grep '^version:' pubspec.yaml | cut -d' ' -f2 | cut -d+ -f1)-${{ github.run_number }}" >> $GITHUB_ENV
       - run: flutter pub get
+      - run: flutter analyze
+      - run: flutter test
       - name: Chave de assinatura
         env: { KEYSTORE_BASE64: '${{ secrets.KEYSTORE_BASE64 }}' }
         run: |
@@ -26,10 +28,11 @@ jobs:
         env:
           KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
           KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
-      - run: mv build/app/outputs/flutter-apk/app-release.apk compras-v${{ env.VERSION }}.apk
+      - run: mv build/app/outputs/flutter-apk/app-release.apk mesquevem-v${{ env.VERSION }}.apk
       - uses: softprops/action-gh-release@v2
         with:
-          files: compras-v${{ env.VERSION }}.apk
+          files: mesquevem-v${{ env.VERSION }}.apk
           tag_name: v${{ env.VERSION }}
+          name: Mês que Vem v${{ env.VERSION }}
           target_commitish: ${{ github.sha }}
           generate_release_notes: true

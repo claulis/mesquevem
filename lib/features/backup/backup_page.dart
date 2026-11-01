@@ -48,7 +48,7 @@ class BackupPage extends StatelessWidget {
     final hoje = DateTime.now().toIso8601String().substring(0, 10);
     await avisandoFalha(context, () async {
       final texto = await store.exportar();
-      if (await salvarArquivo('compras-backup-$hoje.json', texto)) {
+      if (await salvarArquivo('mesquevem-backup-$hoje.json', texto)) {
         msg.showSnackBar(const SnackBar(content: Text('Backup salvo')));
       }
     }, falha: 'Não foi possível salvar o backup');
