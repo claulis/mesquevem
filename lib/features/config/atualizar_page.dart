@@ -1,129 +1,41 @@
 import 'package:flutter/material.dart';
-import 'package:ota_update/ota_update.dart';
-import '../../core/ambiente.dart';
-import '../../core/atualizacao.dart';
+import 'package:provider/provider.dart';
+import '../../state/atualizador.dart';
 
-typedef VerificarVersao = Future<Release> Function();
-typedef BaixarEInstalar = Stream<OtaEvent> Function(Release r);
+String _mb(int bytes) =>
+    (bytes / 1048576).toStringAsFixed(1).replaceAll('.', ',');
 
-Stream<OtaEvent> baixarComOta(Release r) => OtaUpdate().execute(r.apk,
-    destinationFilename: 'mesquevem.apk', sha256checksum: r.sha256);
-
-/// Verifica a última release no GitHub e, se for mais nova, baixa o APK e
-/// abre o instalador do Android (que pede a confirmação do usuário).
-class AtualizarPage extends StatefulWidget {
-  final VerificarVersao verificar;
-  final BaixarEInstalar baixar;
-  final int atual;
-  final String versao;
-  const AtualizarPage(
-      {this.verificar = ultimaRelease,
-      this.baixar = baixarComOta,
-      this.atual = buildAtual,
-      this.versao = versaoAtual,
-      super.key});
-
-  @override
-  State<AtualizarPage> createState() => _AtualizarPageState();
-}
-
-class _AtualizarPageState extends State<AtualizarPage> {
-  bool _ocupado = false;
-  Release? _release;
-  String? _erro, _status;
-  double? _progresso;
-
-  Future<void> _verificar() async {
-    setState(() {
-      _ocupado = true;
-      _erro = _status = null;
-      _release = null;
-    });
-    try {
-      final r = await widget.verificar();
-      if (mounted) setState(() => _release = r);
-    } catch (e) {
-      if (mounted) setState(() => _erro = mensagem(e));
-    } finally {
-      if (mounted) setState(() => _ocupado = false);
-    }
-  }
-
-  void _atualizar(Release r) {
-    setState(() {
-      _ocupado = true;
-      _erro = null;
-      _status = 'Baixando…';
-      _progresso = 0;
-    });
-    widget.baixar(r).listen((e) {
-      if (!mounted) return;
-      setState(() {
-        switch (e.status) {
-          case OtaStatus.DOWNLOADING:
-            _progresso = (double.tryParse(e.value ?? '') ?? 0) / 100;
-            _status = 'Baixando… ${e.value ?? 0}%';
-          case OtaStatus.INSTALLING:
-            _progresso = null;
-            _ocupado = false;
-            _status = 'Abrindo o instalador: toque em "Atualizar" para '
-                'concluir.';
-          case OtaStatus.INSTALLATION_DONE:
-            _ocupado = false;
-            _status = 'Atualizado!';
-          default:
-            _ocupado = false;
-            _progresso = null;
-            _status = null;
-            _erro = switch (e.status) {
-              OtaStatus.PERMISSION_NOT_GRANTED_ERROR =>
-                'Permita "instalar apps desta fonte" para o Mês que Vem e '
-                    'tente de novo.',
-              OtaStatus.DOWNLOAD_ERROR =>
-                'Falha no download. Verifique a internet e tente de novo.',
-              OtaStatus.CHECKSUM_ERROR =>
-                'O arquivo baixado veio corrompido. Tente de novo.',
-              OtaStatus.ALREADY_RUNNING_ERROR =>
-                'Já há um download em andamento.',
-              OtaStatus.CANCELED => 'Download cancelado.',
-              _ => 'Não foi possível atualizar (${e.value ?? e.status.name}).',
-            };
-        }
-      });
-    }, onError: (Object e) {
-      if (mounted) {
-        setState(() {
-          _ocupado = false;
-          _progresso = null;
-          _status = null;
-          _erro = 'Não foi possível atualizar (${mensagem(e)}).';
-        });
-      }
-    });
-  }
+/// Mostra o [Atualizador], que vive no app inteiro: sair da tela e voltar
+/// não perde o progresso.
+class AtualizarPage extends StatelessWidget {
+  const AtualizarPage({super.key});
 
   @override
   Widget build(BuildContext context) {
-    final r = _release;
+    final a = context.watch<Atualizador>();
+    final r = a.release;
     final tema = Theme.of(context);
+    final pct = a.total > 0 ? a.recebidos / a.total : null;
     return Scaffold(
       appBar: AppBar(title: const Text('Atualizar')),
       body: ListView(padding: const EdgeInsets.all(16), children: [
-        Text(widget.atual > 0
-            ? 'Versão instalada: v${widget.versao}'
+        Text(a.atual > 0
+            ? 'Versão instalada: v${a.versao}'
             : 'Versão de desenvolvimento'),
         const SizedBox(height: 16),
         FilledButton.icon(
           icon: const Icon(Icons.refresh),
           label: const Text('Verificar atualização'),
-          onPressed: _ocupado ? null : _verificar,
+          onPressed:
+              a.rodando || a.fase == Fase.verificando ? null : a.verificar,
         ),
         const SizedBox(height: 16),
-        if (r != null && !temNova(r, atual: widget.atual))
-          Text(widget.atual > 0
+        if (a.fase == Fase.verificando) const Text('Verificando…'),
+        if (r != null && !a.temNovaVersao(r) && !a.rodando)
+          Text(a.atual > 0
               ? 'Você já está na última versão 🎉'
               : 'A última versão publicada é ${r.tag}; instale pelo GitHub.'),
-        if (r != null && temNova(r, atual: widget.atual)) ...[
+        if (r != null && a.temNovaVersao(r)) ...[
           Text('Nova versão ${r.tag} disponível!',
               style: tema.textTheme.titleMedium),
           const SizedBox(height: 8),
@@ -132,21 +44,55 @@ class _AtualizarPageState extends State<AtualizarPage> {
               '(Config → Backup e compartilhamento).',
               style: tema.textTheme.bodySmall),
           const SizedBox(height: 8),
-          FilledButton.tonalIcon(
-            icon: const Icon(Icons.system_update),
-            label: const Text('Atualizar agora'),
-            onPressed: _ocupado ? null : () => _atualizar(r),
+          if (!a.rodando && a.fase != Fase.pronto)
+            FilledButton.tonalIcon(
+              icon: const Icon(Icons.system_update),
+              label: Text(
+                  a.temPontoSalvo ? 'Continuar download' : 'Atualizar agora'),
+              onPressed: a.atualizar,
+            ),
+        ],
+        if (a.fase == Fase.baixando || a.fase == Fase.semConexao) ...[
+          const SizedBox(height: 16),
+          LinearProgressIndicator(value: pct),
+          const SizedBox(height: 8),
+          if (a.fase == Fase.baixando)
+            Text('Baixando… ${((pct ?? 0) * 100).floor()}% '
+                '(${_mb(a.recebidos)} de ${_mb(a.total)} MB)'),
+          if (a.fase == Fase.semConexao)
+            Text('Sem conexão: tentando de novo em ${a.tentarEm}s. '
+                'O download continua de onde parou '
+                '(${_mb(a.recebidos)} de ${_mb(a.total)} MB).'),
+        ],
+        if (a.fase == Fase.conferindo) ...[
+          const SizedBox(height: 16),
+          const LinearProgressIndicator(),
+          const SizedBox(height: 8),
+          const Text('Conferindo a integridade do arquivo…'),
+        ],
+        if (a.rodando)
+          TextButton.icon(
+            icon: const Icon(Icons.close),
+            label: const Text('Cancelar'),
+            onPressed: a.cancelar,
+          ),
+        if (a.fase == Fase.pronto) ...[
+          const SizedBox(height: 16),
+          const Text('Download concluído e conferido ✔'),
+          const SizedBox(height: 8),
+          FilledButton.icon(
+            icon: const Icon(Icons.install_mobile),
+            label: const Text('Instalar'),
+            onPressed: a.instalar,
           ),
         ],
-        if (_status != null) ...[
-          const SizedBox(height: 16),
-          if (_progresso != null) LinearProgressIndicator(value: _progresso),
+        if (a.aviso != null) ...[
           const SizedBox(height: 8),
-          Text(_status!),
+          Text(a.aviso!),
         ],
-        if (_erro != null) ...[
+        if (a.fase == Fase.erro) ...[
           const SizedBox(height: 16),
-          Text(_erro!, style: TextStyle(color: tema.colorScheme.error)),
+          Text(a.erro!, style: TextStyle(color: tema.colorScheme.error)),
         ],
       ]),
     );

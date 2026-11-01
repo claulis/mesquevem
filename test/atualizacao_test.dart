@@ -1,10 +1,10 @@
-import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:ota_update/ota_update.dart';
+import 'package:provider/provider.dart';
 import 'package:compras/core/atualizacao.dart';
 import 'package:compras/core/erros.dart';
 import 'package:compras/features/config/atualizar_page.dart';
+import 'package:compras/state/atualizador.dart';
 
 Map<String, dynamic> respostaGitHub(String tag,
         {String nome = 'mesquevem-v1.0.0-7.apk', String? digest}) =>
@@ -46,14 +46,10 @@ void main() {
     expect(temNova(r, atual: 0), isFalse);
   });
 
-  Future<void> abrir(WidgetTester tester, VerificarVersao verificar,
-          {BaixarEInstalar? baixar}) =>
-      tester.pumpWidget(MaterialApp(
-          home: AtualizarPage(
-              verificar: verificar,
-              baixar: baixar ?? (_) => const Stream.empty(),
-              atual: 7,
-              versao: '1.0.0-7')));
+  Future<void> abrir(WidgetTester tester, Future<Release> Function() v) =>
+      tester.pumpWidget(ChangeNotifierProvider(
+          create: (_) => Atualizador(verificar: v, atual: 7, versao: '1.0.0-7'),
+          child: const MaterialApp(home: AtualizarPage())));
 
   testWidgets('já está na última versão', (tester) async {
     await abrir(tester, () async => const Release(7, 'v1.0.0-7', 'u'));
@@ -64,41 +60,12 @@ void main() {
     expect(find.text('Atualizar agora'), findsNothing);
   });
 
-  testWidgets('versão nova: baixa com progresso e abre o instalador',
-      (tester) async {
-    final eventos = StreamController<OtaEvent>();
-    await abrir(tester, () async => const Release(8, 'v1.0.0-8', 'u'),
-        baixar: (_) => eventos.stream);
+  testWidgets('versão nova mostra o botão Atualizar agora', (tester) async {
+    await abrir(tester, () async => const Release(8, 'v1.0.0-8', 'u'));
     await tester.tap(find.text('Verificar atualização'));
     await tester.pumpAndSettle();
     expect(find.text('Nova versão v1.0.0-8 disponível!'), findsOneWidget);
-
-    await tester.tap(find.text('Atualizar agora'));
-    eventos.add(OtaEvent(OtaStatus.DOWNLOADING, '40'));
-    await tester.pump();
-    expect(find.text('Baixando… 40%'), findsOneWidget);
-    expect(
-        tester
-            .widget<LinearProgressIndicator>(
-                find.byType(LinearProgressIndicator))
-            .value,
-        0.4);
-
-    eventos.add(OtaEvent(OtaStatus.INSTALLING, null));
-    await tester.pump();
-    expect(find.textContaining('Abrindo o instalador'), findsOneWidget);
-    await eventos.close();
-  });
-
-  testWidgets('permissão negada vira instrução', (tester) async {
-    await abrir(tester, () async => const Release(8, 'v1.0.0-8', 'u'),
-        baixar: (_) => Stream.value(
-            OtaEvent(OtaStatus.PERMISSION_NOT_GRANTED_ERROR, null)));
-    await tester.tap(find.text('Verificar atualização'));
-    await tester.pumpAndSettle();
-    await tester.tap(find.text('Atualizar agora'));
-    await tester.pumpAndSettle();
-    expect(find.textContaining('instalar apps desta fonte'), findsOneWidget);
+    expect(find.text('Atualizar agora'), findsOneWidget);
   });
 
   testWidgets('erro de rede aparece sem prefixo técnico', (tester) async {
@@ -107,5 +74,26 @@ void main() {
     await tester.tap(find.text('Verificar atualização'));
     await tester.pumpAndSettle();
     expect(find.text('sem conexão com a internet'), findsOneWidget);
+  });
+
+  testWidgets('sair da tela e voltar mantém o progresso', (tester) async {
+    final a = Atualizador(atual: 8, versao: '1.0.0-8')
+      ..release = const Release(9, 'v1.0.0-9', 'u')
+      ..fase = Fase.baixando
+      ..recebidos = 1048576
+      ..total = 2097152;
+    await tester.pumpWidget(ChangeNotifierProvider.value(
+        value: a,
+        child: MaterialApp(
+            routes: {'/atualizar': (_) => const AtualizarPage()},
+            home: const Scaffold())));
+    final nav = tester.state<NavigatorState>(find.byType(Navigator));
+    for (var i = 0; i < 2; i++) {
+      nav.pushNamed('/atualizar');
+      await tester.pumpAndSettle();
+      expect(find.text('Baixando… 50% (1,0 de 2,0 MB)'), findsOneWidget);
+      nav.pop();
+      await tester.pumpAndSettle();
+    }
   });
 }

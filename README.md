@@ -48,7 +48,7 @@ Tudo **offline** e no próprio celular. Sem cadastro, sem nuvem, sem ninguém ve
 | 🔮 | **Previsão** | Três métodos estatísticos que se revezam conforme o histórico cresce (veja abaixo 👇) |
 | 💾 | **Backup e compartilhamento** | Exporta e importa um JSON, ou manda direto pelo WhatsApp, e-mail ou Drive |
 | 🖼️ | **Fundo personalizado** | *"Coloque uma imagem de quem, ou que, te inspira a gastar menos ou de quem, ou que, te faz gastar mais 😄"* |
-| 🔄 | **Atualizar pelo app** | Config → Atualizar: confere a última versão no GitHub, baixa e abre o instalador |
+| 🔄 | **Atualizar pelo app** | Config → Atualizar: confere a última versão no GitHub, baixa e abre o instalador. O download **continua de onde parou** se a internet cair, se você sair da tela ou até se fechar o app, e o SHA-256 é conferido antes de instalar |
 | 🔔 | **Aviso de versão nova** | A cada ~12h o app dá uma espiada no GitHub e notifica se saiu versão nova |
 
 ## 🔮 Como a previsão funciona

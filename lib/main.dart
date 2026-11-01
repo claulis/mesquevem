@@ -4,6 +4,7 @@ import 'app.dart';
 import 'core/atualizacao.dart';
 import 'core/aviso_versao.dart';
 import 'data/repositorio_prefs.dart';
+import 'state/atualizador.dart';
 import 'state/fundo.dart';
 import 'state/store.dart';
 
@@ -13,6 +14,9 @@ void main() {
   runApp(MultiProvider(providers: [
     ChangeNotifierProvider(create: (_) => Store(RepositorioPrefs())),
     ChangeNotifierProvider(create: (_) => Fundo()..carregar()),
+    // não preguiçoso: download interrompido continua assim que o app abre
+    ChangeNotifierProvider(
+        lazy: false, create: (_) => Atualizador()..retomarSalvo().ignore()),
   ], child: const App()));
   // build de desenvolvimento não tem versão para comparar
   if (buildAtual > 0) _avisosDeVersao();
