@@ -30,11 +30,23 @@ android {
         versionName = flutter.versionName
     }
 
+    // Chave fixa (vem dos secrets do GitHub): sem ela cada build no CI sai com
+    // uma chave diferente e o Android recusa atualizar por cima do app instalado.
+    val ks = System.getenv("KEYSTORE_PATH")
+    signingConfigs {
+        create("release") {
+            if (ks != null) {
+                storeFile = file(ks)
+                storePassword = System.getenv("KEYSTORE_PASSWORD")
+                keyAlias = System.getenv("KEY_ALIAS")
+                keyPassword = System.getenv("KEYSTORE_PASSWORD")
+            }
+        }
+    }
+
     buildTypes {
         release {
-            // TODO: Add your own signing config for the release build.
-            // Signing with the debug keys for now, so `flutter run --release` works.
-            signingConfig = signingConfigs.getByName("debug")
+            signingConfig = signingConfigs.getByName(if (ks != null) "release" else "debug")
         }
     }
 }
