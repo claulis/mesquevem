@@ -53,52 +53,60 @@ Tudo **offline** e no próprio celular. Sem cadastro, sem nuvem, sem ninguém ve
 
 ## Previsão de gastos
 
-### Formulação do problema
+### O que é previsto
 
-Seja $y_t$ o total gasto no mês $t$ (soma dos valores das compras com data naquele mês), para $t = 1, \dots, n$, em que $t = 1$ é o primeiro mês com ao menos uma compra e $t = n$ é o último mês **fechado**, isto é, o mês anterior ao corrente. Meses sem compras dentro desse intervalo assumem $y_t = 0$. O mês corrente, por estar incompleto, não integra a série.
+O app soma o valor de todas as compras de cada mês, formando o **histórico mensal** da família. Entram nesse histórico apenas os **meses fechados**, do primeiro mês com alguma compra até o mês passado. Um mês sem compras nesse intervalo conta como R$ 0. O mês atual fica de fora, porque ainda está em andamento.
 
-O objetivo é estimar $\hat{y}$, o gasto total do mês **seguinte ao corrente**, o que corresponde ao horizonte $h = 2$ em relação à última observação da série. A implementação é a função pura `previsao`, em [`lib/features/previsao/previsao.dart`](lib/features/previsao/previsao.dart), sem dependência do Flutter e coberta por testes unitários.
+A partir desse histórico, o app estima quanto será gasto no **mês que vem**, ou seja, no mês seguinte ao atual. O cálculo está na função `previsao`, em [`lib/features/previsao/previsao.dart`](lib/features/previsao/previsao.dart), que não depende do Flutter e é coberta por testes.
 
-### Seleção do estimador
+### Escolha do método
 
-O estimador é escolhido pelo comprimento $n$ da série. O critério é a parcimônia: um modelo só é empregado quando há observações suficientes para sustentá-lo, o que evita o sobreajuste de modelos com mais estrutura a séries curtas.
+O método é escolhido pela quantidade de meses fechados no histórico. O princípio é usar um método mais elaborado somente quando há dados suficientes para sustentá-lo: com pouco histórico, métodos complexos tendem a se ajustar a variações casuais e a errar mais.
 
-| Condição | Estimador | Expressão |
+| Meses de histórico | Método | Cálculo |
 |---|---|---|
-| $n = 0$ | Total parcial | $\hat{y}$ = gasto acumulado no mês corrente |
-| $1 \le n \le 5$ | Média móvel simples de ordem $k = \min(3,\, n)$ | $\hat{y} = \dfrac{1}{k} \displaystyle\sum_{i=n-k+1}^{n} y_i$ |
-| $6 \le n \le 23$ | Suavização exponencial simples, $\alpha = 0{,}5$ | $\ell_1 = y_1$; $\ell_t = \alpha\, y_t + (1-\alpha)\, \ell_{t-1}$; $\hat{y} = \ell_n$ |
-| $n \ge 24$ | Sazonal ingênuo com fator de crescimento anual | $\hat{y} = y_{n-10} \cdot g$, com $g = \dfrac{\sum_{i=n-11}^{n} y_i}{\sum_{i=n-23}^{n-12} y_i}$ |
+| nenhum | Total parcial | previsão = o que já foi gasto no mês atual |
+| 1 a 5 | Média móvel | previsão = média dos últimos 3 meses (ou de todos, se houver menos de 3) |
+| 6 a 23 | Suavização exponencial | a cada mês: `nível = 0,5 × gasto do mês + 0,5 × nível anterior`; previsão = último nível |
+| 24 ou mais | Sazonal com crescimento | previsão = gasto do mesmo mês no ano passado × crescimento anual |
 
-**Média móvel simples.** Estima o nível da série pela média das $k$ observações mais recentes. A previsão é constante em relação ao horizonte. Com $n < 3$, utilizam-se todas as observações disponíveis.
+**Média móvel.** Usa a média dos meses mais recentes como estimativa do gasto típico da família. É simples e estável, adequada quando há poucos meses de dados.
 
-**Suavização exponencial simples.** Equivale a uma média ponderada com pesos que decaem geometricamente: a observação mais recente recebe peso $\alpha = 0{,}5$, a anterior $0{,}25$, a seguinte $0{,}125$, e assim por diante. Adapta-se a mudanças de patamar mais rapidamente que a média móvel. O parâmetro $\alpha$ é fixo e não estimado a partir dos dados.
+**Suavização exponencial.** Também é uma média, mas dá mais peso aos meses recentes: o último mês vale 50%, o anterior 25%, o anterior a ele 12,5%, e assim por diante. Com isso, a previsão acompanha mais rápido uma mudança de hábito. O peso de 0,5 é fixo.
 
-**Sazonal ingênuo com crescimento.** O mês-alvo é o $(n+2)$-ésimo da série, e sua referência sazonal é a observação do mesmo mês do calendário no ano anterior, $y_{(n+2)-12} = y_{n-10}$. Essa referência é multiplicada pelo fator $g$, a razão entre a soma dos últimos 12 meses e a dos 12 meses precedentes, que estima a variação anual do nível de gastos. Se o denominador for nulo, adota-se $g = 1$. São necessárias 24 observações, isto é, dois ciclos sazonais completos, para que $g$ possa ser calculado.
+**Sazonal com crescimento.** Aproveita o fato de que certos meses se repetem todo ano (dezembro costuma ser mais caro, por exemplo). Parte do gasto do mesmo mês no ano anterior e o corrige pelo crescimento anual:
+
+```
+crescimento = (soma dos últimos 12 meses) ÷ (soma dos 12 meses anteriores a eles)
+```
+
+Se a soma dos 12 meses anteriores for zero, o crescimento é 1, isto é, sem correção. São necessários 24 meses de histórico (dois anos completos) para calcular esse crescimento.
+
+**Exemplo.** Hoje é outubro de 2026 e a família gastou R$ 100 por mês de outubro/2024 a setembro/2025 e R$ 200 por mês de outubro/2025 a setembro/2026. Há 24 meses de histórico, então o método é o sazonal. O mês que vem é novembro; em novembro/2025 o gasto foi R$ 200. O crescimento é 2.400 ÷ 1.200 = 2. A previsão para novembro/2026 é R$ 200 × 2 = **R$ 400**. Este caso é um dos testes automatizados do projeto.
 
 ### Limitações
 
-- Os estimadores são heurísticas de baixa complexidade. Não há estimação do parâmetro $\alpha$ nem intervalos de predição, e a seleção do método por limiares fixos não foi validada por validação cruzada em séries temporais (origem móvel).
-- A suavização exponencial simples não modela tendência, e o método sazonal assume padrão anual estável. A extensão natural, ainda não implementada, é o método de Holt-Winters.
-- Compras extraordinárias (por exemplo, uma viagem) afetam diretamente as estimativas de nível, pois a série não é filtrada de valores atípicos.
+- Os métodos são propositalmente simples. Eles não informam uma margem de erro, e o peso de 0,5 e os limites de 6 e 24 meses foram fixados, não calibrados com dados reais.
+- A suavização exponencial não capta tendência de alta ou de queda dentro do ano, e o método sazonal supõe que o padrão anual se repete. A evolução natural, ainda não implementada, é o método de Holt-Winters, que trata nível, tendência e sazonalidade juntos.
+- Gastos fora do comum (uma viagem, um conserto) entram integralmente na média e puxam a previsão para cima nos meses seguintes.
 
 Referência: R. J. Hyndman e G. Athanasopoulos, *Forecasting: Principles and Practice*, 3.ª ed., OTexts, 2021 ([otexts.com/fpp3](https://otexts.com/fpp3/)).
 
-### Indicadores derivados
+### Indicadores da tela principal (insights)
 
-Calculados por funções puras em [`lib/features/previsao/insights.dart`](lib/features/previsao/insights.dart). Sejam $d$ o dia corrente, $D$ o número de dias do mês, $G$ o gasto acumulado no mês e $T$ o teto de gastos, quando cadastrado.
+Calculados em [`lib/features/previsao/insights.dart`](lib/features/previsao/insights.dart). Cada indicador só aparece quando se aplica; os que dependem do teto, por exemplo, só aparecem com o teto cadastrado.
 
-| Indicador | Definição |
+| Indicador | Como é calculado |
 |---|---|
-| Projeção do mês | $\hat{G}_{\text{fim}} = G \cdot D / d$, extrapolação proporcional que supõe gasto uniformemente distribuído nos dias |
-| Orçamento diário restante | $(T - G) / (D - d + 1)$, incluindo o dia corrente; se $G > T$, exibe-se o excedente $G - T$ |
-| Variação em relação ao mês anterior | $\Delta = G / G^{\text{ant}}_{[1,\, d']} - 1$, com $d' = \min(d,\, D_{\text{ant}})$, de modo que os dois períodos tenham o mesmo número de dias |
-| Utilização do limite de uma categoria | $u = G_c / L_c$; alerta para $0{,}8 \le u \le 1$, e acima de $1$ a categoria é exibida em vermelho |
-| Categoria com maior desvio | Para cada categoria $c$, $\bar{G}_c = \frac{1}{3} \sum_{j=1}^{3} G_c^{(-j)}$ (média dos três meses fechados anteriores); seleciona-se a de maior $G_c - \bar{G}_c > 0$ com $\bar{G}_c > 0$ |
-| Previsão acima do teto | $\hat{y} > T$ |
-| Aniversários | Gastadores cujo mês de aniversário é o mês seguinte ao corrente |
+| Ritmo do mês | `gasto até hoje ÷ dia de hoje × dias do mês`. Supõe que o gasto continue no mesmo ritmo até o fim do mês |
+| Quanto ainda pode gastar por dia | `(teto − gasto até hoje) ÷ dias que faltam`, contando hoje. Se o teto já foi ultrapassado, mostra o valor excedido |
+| Comparação com o mês passado | Compara o gasto de hoje com o do mês passado **no mesmo período** (do dia 1 até o mesmo dia), em percentual |
+| Perto do limite | Avisa quando uma categoria já usou entre 80% e 100% do limite. Acima de 100%, a categoria aparece em vermelho na lista |
+| Categoria que mais cresceu | Compara o gasto de cada categoria neste mês com a média dela nos 3 meses anteriores e mostra a que mais ultrapassou essa média |
+| Previsão acima do teto | Avisa quando a previsão do mês que vem já é maior que o teto |
+| Aniversários | Lista os gastadores que fazem aniversário no mês que vem |
 
-O desvio por categoria compara o acumulado **parcial** do mês corrente com médias de meses **completos**. O alerta é, portanto, conservador: só dispara quando o acumulado parcial já supera a média.
+A comparação por categoria confronta um mês **ainda em andamento** com meses **completos**. O alerta é, portanto, cauteloso: só aparece quando o gasto parcial já supera a média de um mês inteiro.
 
 ## Linguagem e plataformas
 
