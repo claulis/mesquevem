@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:provider/provider.dart';
@@ -21,6 +22,14 @@ Map<String, dynamic> respostaGitHub(String tag,
     };
 
 void main() {
+  test('versão release declara INTERNET (sem ela: "sem conexão" com internet)',
+      () {
+    // o manifest de debug/profile tem a permissão; o release só tem o main
+    final m =
+        File('android/app/src/main/AndroidManifest.xml').readAsStringSync();
+    expect(m, contains('android.permission.INTERNET'));
+  });
+
   test('lê build, APK e sha256 da resposta do GitHub', () {
     final r =
         Release.deJson(respostaGitHub('v1.0.0-7', digest: 'sha256:abc123'));

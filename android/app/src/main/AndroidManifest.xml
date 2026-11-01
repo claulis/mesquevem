@@ -1,4 +1,8 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- Config → Atualizar e aviso de versão nova consultam o GitHub. Antes vinha
+         de carona no plugin ota_update; sem ele, a versão release ficou sem
+         internet (v1.0.0-10). Tem de estar aqui, não só em debug/profile. -->
+    <uses-permission android:name="android.permission.INTERNET"/>
     <!-- Config → Atualizar: abrir o instalador com o APK baixado -->
     <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES"/>
     <application
