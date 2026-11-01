@@ -42,8 +42,9 @@ void main() {
   test('renomear categoria atualiza as compras', () async {
     await store.salvarCompra(
         Compra(DateTime(2026, 9, 1), 10, categoria: 'Lazer', evento: 'Natal'));
-    await store.renomearCategoria(TipoCategoria.compra, 'Lazer', ' Diversão ');
-    await store.renomearCategoria(TipoCategoria.evento, 'Natal', 'Festas');
+    await store.editarCategoria(
+        TipoCategoria.compra, 'Lazer', ' Diversão ', null);
+    await store.editarCategoria(TipoCategoria.evento, 'Natal', 'Festas', null);
     expect(store.compras.single.categoria, 'Diversão');
     expect(store.compras.single.evento, 'Festas');
     expect(store.categorias(TipoCategoria.compra), contains('Diversão'));
@@ -59,9 +60,9 @@ void main() {
     await expectLater(
         store.adicionarCategoria(t, 'Lazer'), recusa('Já existe'));
     await expectLater(
-        store.renomearCategoria(t, 'Outros', 'Lazer'), recusa('Já existe'));
-    await expectLater(
-        store.renomearCategoria(t, 'Sumiu', 'X'), recusa('não existe mais'));
+        store.editarCategoria(t, 'Outros', 'Lazer', null), recusa('Já existe'));
+    await expectLater(store.editarCategoria(t, 'Sumiu', 'X', null),
+        recusa('não existe mais'));
     expect(store.categorias(t), antes);
     expect(repo.salvamentos, 0);
   });
@@ -95,7 +96,8 @@ void main() {
       await expectLater(store.adicionarCategoria(TipoCategoria.compra, 'Nova'),
           throwsA(falha));
       await expectLater(
-          store.renomearCategoria(TipoCategoria.compra, 'Lazer', 'Diversão'),
+          store.editarCategoria(
+              TipoCategoria.compra, 'Lazer', 'Diversão', null),
           throwsA(falha));
       await expectLater(store.removerCategoria(TipoCategoria.compra, 'Lazer'),
           throwsA(falha));
@@ -178,7 +180,7 @@ void main() {
       () async {
     const t = TipoCategoria.compra;
     final add = store.adicionarCategoria(t, 'Feira');
-    final ren = store.renomearCategoria(t, 'Lazer', 'Feira');
+    final ren = store.editarCategoria(t, 'Lazer', 'Feira', null);
     await add;
     await expectLater(ren, throwsA(isA<OperacaoRecusada>()));
     expect(store.categorias(t), containsAll(['Lazer', 'Feira']));
@@ -201,7 +203,7 @@ void main() {
     store.addListener(() => avisos++);
     await store.removerCompra('não existe');
     await store.removerCategoria(TipoCategoria.compra, 'não existe');
-    await store.renomearCategoria(TipoCategoria.compra, 'Lazer', ' Lazer ');
+    await store.editarCategoria(TipoCategoria.compra, 'Lazer', ' Lazer ', null);
     expect(repo.salvamentos, 0);
     expect(avisos, 0);
   });
@@ -250,7 +252,8 @@ void main() {
     await store
         .salvarCompra(Compra(DateTime(2026, 9, 1), 10, categoria: 'Lazer'));
     final antes = store.compras.single;
-    await store.renomearCategoria(TipoCategoria.compra, 'Lazer', 'Diversão');
+    await store.editarCategoria(
+        TipoCategoria.compra, 'Lazer', 'Diversão', null);
     expect(antes.categoria, 'Lazer');
     expect(store.compras.single.categoria, 'Diversão');
     expect(store.compras.single.id, antes.id);

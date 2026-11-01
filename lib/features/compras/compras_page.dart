@@ -32,6 +32,9 @@ class ComprasPage extends StatelessWidget {
     var data = c?.data ?? DateTime.now();
     String? cat = (c?.categoria ?? '').isEmpty ? null : c!.categoria;
     String? ev = (c?.evento ?? '').isEmpty ? null : c!.evento;
+    // '' = Todos; gastador já excluído também volta a Todos
+    var gast =
+        store.gastadores.any((g) => g.id == c?.gastador) ? c!.gastador : '';
     String? erroValor;
 
     // o diálogo devolve o valor já validado, ou null se cancelado
@@ -62,6 +65,17 @@ class ComprasPage extends StatelessWidget {
                   (v) => setD(() => cat = v)),
               _drop('Evento', store.categorias(TipoCategoria.evento), ev,
                   (v) => setD(() => ev = v)),
+              DropdownButtonFormField<String>(
+                isExpanded: true,
+                initialValue: gast,
+                decoration: const InputDecoration(labelText: 'Gastador'),
+                items: [
+                  const DropdownMenuItem(value: '', child: Text('Todos')),
+                  for (final g in store.gastadores)
+                    DropdownMenuItem(value: g.id, child: Text(g.nome)),
+                ],
+                onChanged: (v) => setD(() => gast = v ?? ''),
+              ),
               const SizedBox(height: 8),
               OutlinedButton.icon(
                 icon: const Icon(Icons.calendar_today),
@@ -115,13 +129,15 @@ class ComprasPage extends StatelessWidget {
               descricao: desc.text.trim(),
               categoria: cat ?? '',
               evento: ev ?? '',
+              gastador: gast,
             ),
             edicao: c != null));
   }
 
   @override
   Widget build(BuildContext context) {
-    final compras = context.watch<Store>().compras;
+    final store = context.watch<Store>();
+    final compras = store.compras;
     return Scaffold(
       appBar: AppBar(title: const Text('Compras')),
       floatingActionButton: FloatingActionButton(
@@ -134,9 +150,12 @@ class ComprasPage extends StatelessWidget {
                   title: Text(c.descricao.isNotEmpty
                       ? c.descricao
                       : (c.categoria.isNotEmpty ? c.categoria : 'Compra')),
-                  subtitle: Text([fmtData(c.data), c.categoria, c.evento]
-                      .where((t) => t.isNotEmpty)
-                      .join(' · ')),
+                  subtitle: Text([
+                    fmtData(c.data),
+                    c.categoria,
+                    c.evento,
+                    if (c.gastador.isNotEmpty) store.nomeGastador(c.gastador),
+                  ].where((t) => t.isNotEmpty).join(' · ')),
                   onTap: () => _form(context, c),
                   trailing: Row(mainAxisSize: MainAxisSize.min, children: [
                     Text(fmtValor(c.valor)),

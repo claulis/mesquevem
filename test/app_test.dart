@@ -33,13 +33,14 @@ void main() {
           ..dados.compras.add(Compra(DateTime.now(), 42, descricao: 'Pão')));
 
     expect(find.text('Previsão para o mês que vem'), findsOneWidget);
-    expect(find.text('R\$ 42,00'), findsOneWidget);
+    expect(find.text('R\$ 42,00'), findsWidgets);
 
     for (final (botao, titulo) in [
       ('Cadastro compra', 'Compras'),
       ('Categoria evento', 'Categorias de evento'),
       ('Categoria compra', 'Categorias de compra'),
-      ('Backup', 'Backup'),
+      ('Gastadores', 'Gastadores'),
+      ('Config', 'Config'),
     ]) {
       await tester.tap(find.text(botao));
       await tester.pumpAndSettle();
@@ -164,8 +165,8 @@ void main() {
     await abrir(tester, RepositorioMemoria());
 
     expect(tester.takeException(), isNull);
-    await tester.tap(find.text('Backup'));
+    await tester.tap(find.text('Config'));
     await tester.pumpAndSettle();
-    expect(find.widgetWithText(AppBar, 'Backup'), findsOneWidget);
+    expect(find.widgetWithText(AppBar, 'Config'), findsOneWidget);
   });
 }

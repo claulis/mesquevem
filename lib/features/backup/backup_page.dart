@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:share_plus/share_plus.dart';
 import '../../core/confirmar.dart';
 import '../../core/ambiente.dart';
 import '../../core/erros.dart';
@@ -14,6 +15,17 @@ typedef SalvarArquivo = Future<bool> Function(String nome, String texto);
 
 /// Devolve null se o usuário cancelou.
 typedef AbrirArquivo = Future<String?> Function();
+
+typedef CompartilharArquivo = Future<void> Function(String nome, String texto);
+
+Future<void> compartilharComSistema(String nome, String texto) => doAmbiente(
+    () => SharePlus.instance.share(ShareParams(files: [
+          XFile.fromData(utf8.encode(texto),
+              name: nome, mimeType: 'application/json')
+        ], fileNameOverrides: [
+          nome
+        ])),
+    'erro ao compartilhar');
 
 Future<bool> salvarComSeletor(String nome, String texto) => doAmbiente(
     () async =>
@@ -37,21 +49,32 @@ Future<String?> abrirComSeletor() async {
 class BackupPage extends StatelessWidget {
   final SalvarArquivo salvarArquivo;
   final AbrirArquivo abrirArquivo;
+  final CompartilharArquivo compartilhar;
   const BackupPage(
       {this.salvarArquivo = salvarComSeletor,
       this.abrirArquivo = abrirComSeletor,
+      this.compartilhar = compartilharComSistema,
       super.key});
+
+  static String _nomeArquivo() =>
+      'mesquevem-backup-${DateTime.now().toIso8601String().substring(0, 10)}.json';
 
   Future<void> _exportar(BuildContext context) async {
     final store = context.read<Store>();
     final msg = ScaffoldMessenger.of(context);
-    final hoje = DateTime.now().toIso8601String().substring(0, 10);
     await avisandoFalha(context, () async {
       final texto = await store.exportar();
-      if (await salvarArquivo('mesquevem-backup-$hoje.json', texto)) {
+      if (await salvarArquivo(_nomeArquivo(), texto)) {
         msg.showSnackBar(const SnackBar(content: Text('Backup salvo')));
       }
     }, falha: 'Não foi possível salvar o backup');
+  }
+
+  Future<void> _compartilhar(BuildContext context) async {
+    final store = context.read<Store>();
+    await avisandoFalha(context,
+        () async => compartilhar(_nomeArquivo(), await store.exportar()),
+        falha: 'Não foi possível compartilhar o backup');
   }
 
   Future<void> _importar(BuildContext context) async {
@@ -92,7 +115,7 @@ class BackupPage extends StatelessWidget {
     final nCat = store.categorias(TipoCategoria.compra).length +
         store.categorias(TipoCategoria.evento).length;
     return Scaffold(
-      appBar: AppBar(title: const Text('Backup')),
+      appBar: AppBar(title: const Text('Backup e compartilhamento')),
       body: ListView(padding: const EdgeInsets.all(16), children: [
         Text(
             'Neste aparelho: ${store.compras.length} compras e $nCat categorias.'),
@@ -106,6 +129,11 @@ class BackupPage extends StatelessWidget {
             icon: const Icon(Icons.upload_file),
             label: const Text('Exportar dados'),
             onPressed: () => _exportar(context)),
+        const SizedBox(height: 8),
+        FilledButton.tonalIcon(
+            icon: const Icon(Icons.share),
+            label: const Text('Compartilhar backup'),
+            onPressed: () => _compartilhar(context)),
         const SizedBox(height: 8),
         OutlinedButton.icon(
             icon: const Icon(Icons.download),

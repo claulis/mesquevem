@@ -1,18 +1,33 @@
 import 'dart:convert';
 import '../core/erros.dart';
 import 'compra.dart';
+import 'gastador.dart';
 
 /// Versão do formato JSON (armazenamento interno e arquivo de backup).
 /// Mudou o formato? Suba este número e acrescente um `if (v < N)` em [Dados._migrar].
-const versaoAtual = 2;
+const versaoAtual = 3;
 
 class Dados {
   final List<Compra> compras;
   final List<String> catCompra, catEvento;
+
+  /// Limite mensal por nome de categoria; categoria sem limite não aparece.
+  final Map<String, double> limCompra, limEvento;
+  final List<Gastador> gastadores;
+
+  /// Teto de gastos do mês; null = não cadastrado.
+  double? teto;
   Dados(
       {required this.compras,
       required this.catCompra,
-      required this.catEvento});
+      required this.catEvento,
+      Map<String, double>? limCompra,
+      Map<String, double>? limEvento,
+      List<Gastador>? gastadores,
+      this.teto})
+      : limCompra = limCompra ?? {},
+        limEvento = limEvento ?? {},
+        gastadores = gastadores ?? [];
 
   factory Dados.padrao() => Dados(
         compras: [],
@@ -25,6 +40,10 @@ class Dados {
         'compras': compras,
         'catCompra': catCompra,
         'catEvento': catEvento,
+        'limCompra': limCompra,
+        'limEvento': limEvento,
+        'gastadores': gastadores,
+        'teto': teto,
       };
 
   // acima disso não é versão de verdade, é dado corrompido (ex.: 1e300)
@@ -48,11 +67,21 @@ class Dados {
     if (v > versaoAtual) throw DadosDeVersaoMaisNova(v);
     try {
       j = _migrar(j, v);
+      final catCompra = _categoriasValidas(j['catCompra']);
+      final catEvento = _categoriasValidas(j['catEvento']);
+      final teto = (j['teto'] as num?)?.toDouble();
+      if (teto != null && !_valorValido(teto)) {
+        throw FormatException('teto inválido: $teto');
+      }
       return Dados(
         compras: _semIdsRepetidos(
             [for (final c in j['compras']) Compra.fromJson(c)]),
-        catCompra: _categoriasValidas(j['catCompra']),
-        catEvento: _categoriasValidas(j['catEvento']),
+        catCompra: catCompra,
+        catEvento: catEvento,
+        limCompra: _limitesValidos(j['limCompra'], catCompra),
+        limEvento: _limitesValidos(j['limEvento'], catEvento),
+        gastadores: _gastadoresValidos(j['gastadores']),
+        teto: teto,
       );
     } on TypeError {
       // campo ausente ou de tipo errado. Só TypeError: outros Errors são
@@ -82,12 +111,43 @@ class Dados {
           .toSet()
           .toList();
 
+  static bool _valorValido(double v) => v.isFinite && v > 0;
+
+  /// Limites de categorias que existem, com valor positivo e finito. Os de
+  /// categoria inexistente (backup editado à mão) são descartados.
+  static Map<String, double> _limitesValidos(
+      Object? mapa, List<String> categorias) {
+    final r = <String, double>{};
+    // dados antigos não têm o campo
+    if (mapa == null) return r;
+    for (final MapEntry(:key, :value)
+        in (mapa as Map<String, dynamic>).entries) {
+      final v = (value as num).toDouble();
+      if (!_valorValido(v)) throw FormatException('limite inválido: $v');
+      if (categorias.contains(key.trim())) r[key.trim()] = v;
+    }
+    return r;
+  }
+
+  /// Ids repetidos (backup editado à mão): fica o primeiro.
+  static List<Gastador> _gastadoresValidos(Object? lista) {
+    final ids = <String>{};
+    return [
+      for (final g in (lista ?? const []) as List)
+        if (Gastador.fromJson(g) case final x when ids.add(x.id)) x
+    ];
+  }
+
   /// Cópia rasa: listas novas, compras (imutáveis) compartilhadas. Campo novo
   /// em [Dados] entra aqui, junto do construtor.
   Dados copia() => Dados(
       compras: List.of(compras),
       catCompra: List.of(catCompra),
-      catEvento: List.of(catEvento));
+      catEvento: List.of(catEvento),
+      limCompra: Map.of(limCompra),
+      limEvento: Map.of(limEvento),
+      gastadores: List.of(gastadores),
+      teto: teto);
 
   /// Backup editado à mão pode repetir ids; o Store localiza compras pelo id.
   /// A repetição ganha sufixo determinístico ("x-2"), igual a cada leitura.
@@ -124,6 +184,8 @@ class Dados {
           {...c as Map<String, dynamic>, 'id': c['id'] ?? 'v1-$i'}
       ];
     }
+    // v3 (limites, gastadores, teto): campos novos e opcionais, lidos com
+    // default em fromJson; nada a converter.
     return j;
   }
 }

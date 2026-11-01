@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import '../core/erros.dart';
 import '../data/compra.dart';
+import '../data/gastador.dart';
 import '../data/repositorio.dart';
 
 enum TipoCategoria { compra, evento }
@@ -26,6 +27,17 @@ class Store extends ChangeNotifier {
       UnmodifiableListView(_lista(_d, t));
   static List<String> _lista(Dados d, TipoCategoria t) =>
       t == TipoCategoria.compra ? d.catCompra : d.catEvento;
+  static Map<String, double> _limites(Dados d, TipoCategoria t) =>
+      t == TipoCategoria.compra ? d.limCompra : d.limEvento;
+
+  /// Limite mensal da categoria, ou null se não tiver.
+  double? limite(TipoCategoria t, String nome) => _limites(_d, t)[nome];
+  List<Gastador> get gastadores => UnmodifiableListView(_d.gastadores);
+  double? get teto => _d.teto;
+
+  /// Nome para mostrar do gastador de uma compra ("Todos" se vazio ou excluído).
+  String nomeGastador(String id) =>
+      _d.gastadores.where((g) => g.id == id).firstOrNull?.nome ?? 'Todos';
 
   /// Lê do repositório. Entra na mesma fila das alterações, para nunca
   /// trocar os dados no meio de um salvamento.
@@ -119,19 +131,26 @@ class Store extends ChangeNotifier {
 
   /// Lança [OperacaoRecusada] se o nome for vazio ou já existir. A tela valida
   /// antes ([nomeInvalido]); aqui vale o estado no momento de aplicar.
-  Future<void> adicionarCategoria(TipoCategoria t, String nome) {
+  Future<void> adicionarCategoria(TipoCategoria t, String nome,
+      {double? limite}) {
     nome = nome.trim();
-    return _alterar((d) => _lista(d, t).add(nome),
-        recusa: () => nomeInvalido(t, nome));
+    return _alterar((d) {
+      _lista(d, t).add(nome);
+      if (limite != null) _limites(d, t)[nome] = limite;
+    }, recusa: () => nomeInvalido(t, nome));
   }
 
-  /// Renomeia também nas compras já cadastradas. Manter o nome não faz nada;
-  /// nome inválido ou categoria que não existe mais lança [OperacaoRecusada].
-  Future<void> renomearCategoria(TipoCategoria t, String antigo, String novo) {
+  /// Troca nome e [limite] (null = sem limite). O novo nome vale também nas
+  /// compras já cadastradas. Nada mudou: não faz nada; nome inválido ou
+  /// categoria que não existe mais lança [OperacaoRecusada].
+  Future<void> editarCategoria(
+      TipoCategoria t, String antigo, String novo, double? limite) {
     novo = novo.trim();
     return _alterar((d) {
-      final l = _lista(d, t);
+      final l = _lista(d, t), lim = _limites(d, t);
       l[l.indexOf(antigo)] = novo;
+      lim.remove(antigo);
+      if (limite != null) lim[novo] = limite;
       for (var i = 0; i < d.compras.length; i++) {
         final c = d.compras[i];
         if (t == TipoCategoria.evento && c.evento == antigo) {
@@ -142,14 +161,43 @@ class Store extends ChangeNotifier {
         }
       }
     },
-        semEfeito: () => novo == antigo,
+        semEfeito: () => novo == antigo && limite == this.limite(t, antigo),
         recusa: () => _lista(_d, t).contains(antigo)
-            ? nomeInvalido(t, novo)
+            ? nomeInvalido(t, novo, atual: antigo)
             : 'A categoria "$antigo" não existe mais');
   }
 
   /// Categoria que já não existe: nada a fazer.
-  Future<void> removerCategoria(TipoCategoria t, String nome) =>
-      _alterar((d) => _lista(d, t).remove(nome),
-          semEfeito: () => !_lista(_d, t).contains(nome));
+  Future<void> removerCategoria(TipoCategoria t, String nome) => _alterar((d) {
+        _lista(d, t).remove(nome);
+        _limites(d, t).remove(nome);
+      }, semEfeito: () => !_lista(_d, t).contains(nome));
+
+  /// Insere ou substitui pelo id. Com [edicao], o gastador tem de existir.
+  Future<void> salvarGastador(Gastador g, {bool edicao = false}) =>
+      _alterar((d) {
+        final i = d.gastadores.indexWhere((x) => x.id == g.id);
+        if (i < 0) {
+          d.gastadores.add(g);
+        } else {
+          d.gastadores[i] = g;
+        }
+      },
+          recusa: () => edicao && !_d.gastadores.any((x) => x.id == g.id)
+              ? 'este gastador foi excluído'
+              : null);
+
+  /// As compras dele passam para "Todos".
+  Future<void> removerGastador(String id) => _alterar((d) {
+        d.gastadores.removeWhere((g) => g.id == id);
+        for (var i = 0; i < d.compras.length; i++) {
+          if (d.compras[i].gastador == id) {
+            d.compras[i] = d.compras[i].copiaCom(gastador: '');
+          }
+        }
+      }, semEfeito: () => !_d.gastadores.any((g) => g.id == id));
+
+  /// null remove o teto.
+  Future<void> definirTeto(double? valor) =>
+      _alterar((d) => d.teto = valor, semEfeito: () => valor == _d.teto);
 }

@@ -17,7 +17,7 @@ Future<(Store, RepositorioMemoria)> abrir(WidgetTester tester) async {
 }
 
 Future<void> digitarESalvar(WidgetTester tester, String nome) async {
-  await tester.enterText(find.byType(TextField), nome);
+  await tester.enterText(find.byType(TextField).first, nome);
   await tester.tap(find.text('Salvar'));
   await tester.pumpAndSettle();
 }
@@ -36,7 +36,7 @@ void main() {
     expect(find.text('Já existe uma categoria com esse nome'), findsOneWidget);
     expect(find.text('Nova categoria'), findsOneWidget);
 
-    await tester.enterText(find.byType(TextField), 'Padaria');
+    await tester.enterText(find.byType(TextField).first, 'Padaria');
     await tester.pump();
     expect(find.text('Já existe uma categoria com esse nome'), findsNothing,
         reason: 'o erro some ao digitar');
@@ -71,5 +71,31 @@ void main() {
     expect(find.text('Não foi possível salvar: disco cheio'), findsOneWidget);
     expect(store.categorias(TipoCategoria.compra), isNot(contains('Padaria')));
     expect(find.text('Padaria'), findsNothing);
+  });
+
+  testWidgets(
+      'limite: cadastra, aparece na lista, inválido recusa, vazio remove',
+      (tester) async {
+    final (store, _) = await abrir(tester);
+    await tester.tap(find.byIcon(Icons.add));
+    await tester.pumpAndSettle();
+    await tester.enterText(find.byType(TextField).first, 'Padaria');
+    await tester.enterText(find.byType(TextField).last, 'abc');
+    await tester.tap(find.text('Salvar'));
+    await tester.pumpAndSettle();
+    expect(find.text('Use só números, ponto ou vírgula'), findsOneWidget);
+
+    await tester.enterText(find.byType(TextField).last, '300');
+    await tester.tap(find.text('Salvar'));
+    await tester.pumpAndSettle();
+    expect(store.limite(TipoCategoria.compra, 'Padaria'), 300);
+    expect(find.text('Limite: R\$ 300,00'), findsOneWidget);
+
+    await tester.tap(find.text('Padaria'));
+    await tester.pumpAndSettle();
+    await tester.enterText(find.byType(TextField).last, '');
+    await tester.tap(find.text('Salvar'));
+    await tester.pumpAndSettle();
+    expect(store.limite(TipoCategoria.compra, 'Padaria'), isNull);
   });
 }

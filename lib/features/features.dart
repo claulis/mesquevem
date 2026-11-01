@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
 import '../state/store.dart';
-import 'backup/backup_page.dart';
 import 'categorias/categoria_page.dart';
 import 'compras/compras_page.dart';
+import 'config/config_page.dart';
+import 'gastadores/gastadores_page.dart';
 
 class Feature {
   final IconData icone;
@@ -20,5 +21,8 @@ final features = [
       (_) => const CategoriaPage(TipoCategoria.evento)),
   Feature(Icons.label, 'Categoria compra', '/categorias/compra',
       (_) => const CategoriaPage(TipoCategoria.compra)),
-  Feature(Icons.import_export, 'Backup', '/backup', (_) => const BackupPage()),
+  Feature(
+      Icons.people, 'Gastadores', '/gastadores', (_) => const GastadoresPage()),
+  // última, à direita
+  Feature(Icons.settings, 'Config', '/config', (_) => const ConfigPage()),
 ];

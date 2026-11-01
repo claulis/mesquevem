@@ -6,9 +6,15 @@ class Compra {
   final String id;
   final DateTime data;
   final double valor;
-  final String descricao, categoria, evento;
+
+  /// [gastador] é o id de um Gastador; vazio = "Todos".
+  final String descricao, categoria, evento, gastador;
   Compra(this.data, this.valor,
-      {String? id, this.descricao = '', this.categoria = '', this.evento = ''})
+      {String? id,
+      this.descricao = '',
+      this.categoria = '',
+      this.evento = '',
+      this.gastador = ''})
       : id = id ?? novoId();
 
   Map<String, dynamic> toJson() => {
@@ -18,16 +24,19 @@ class Compra {
         'descricao': descricao,
         'categoria': categoria,
         'evento': evento,
+        'gastador': gastador,
       };
 
   /// Cópia com campos trocados. Campo novo entra aqui e em [toJson]; o teste
   /// "copiaCom preserva todos os campos" acusa se faltar.
-  Compra copiaCom({String? id, String? categoria, String? evento}) =>
+  Compra copiaCom(
+          {String? id, String? categoria, String? evento, String? gastador}) =>
       Compra(data, valor,
           id: id ?? this.id,
           descricao: descricao,
           categoria: categoria ?? this.categoria,
-          evento: evento ?? this.evento);
+          evento: evento ?? this.evento,
+          gastador: gastador ?? this.gastador);
 
   // campos novos: ler com default (`?? ''`) para aceitar dados antigos
   factory Compra.fromJson(Map<String, dynamic> j) {
@@ -46,6 +55,7 @@ class Compra {
       // nomes de categoria são comparados sem espaços nas pontas
       categoria: (j['categoria'] as String? ?? '').trim(),
       evento: (j['evento'] as String? ?? '').trim(),
+      gastador: j['gastador'] as String? ?? '',
     );
   }
 }
