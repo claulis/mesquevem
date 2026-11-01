@@ -4,6 +4,7 @@ import '../../core/format.dart';
 import '../../core/salvar.dart';
 import '../../state/store.dart';
 import '../backup/backup_page.dart';
+import 'atualizar_page.dart';
 import 'fundo_page.dart';
 
 class ConfigPage extends StatelessWidget {
@@ -84,6 +85,11 @@ class ConfigPage extends StatelessWidget {
           title: const Text('Teto de gastos'),
           subtitle: Text(teto == null ? 'Não cadastrado' : fmtValor(teto)),
           onTap: () => _teto(context),
+        ),
+        ListTile(
+          leading: const Icon(Icons.system_update),
+          title: const Text('Atualizar'),
+          onTap: () => abrir(const AtualizarPage()),
         ),
       ]),
     );
