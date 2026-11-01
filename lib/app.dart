@@ -7,7 +7,7 @@ class App extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => MaterialApp(
-        title: 'Compras',
+        title: 'Mês que Vem',
         theme: ThemeData(colorSchemeSeed: Colors.teal, useMaterial3: true),
         home: const InicioPage(),
         routes: {for (final f in features) f.rota: f.builder},
