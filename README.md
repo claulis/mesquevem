@@ -186,6 +186,9 @@ flutter run         # com um celular ou emulador Android conectado
 
 | Versão | Novidades |
 |---|---|
+| v1.0.0-12 | Versão de teste da retomada do download 📶 |
+| v1.0.0-11 | Correção: a versão release tinha ficado sem permissão de internet |
+| v1.0.0-10 | Download retomável: sai da tela, cai a rede ou fecha o app e ele continua de onde parou |
 | v1.0.0-9 | Versão de teste da atualização pelo app 🔄 |
 | v1.0.0-8 | Atualizar pelo app, aviso de versão nova, README novo |
 | v1.0.0-7 | Barra do teto e insights na tela principal |
