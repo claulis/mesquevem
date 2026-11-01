@@ -32,6 +32,8 @@ class Store extends ChangeNotifier {
 
   /// Limite mensal da categoria, ou null se não tiver.
   double? limite(TipoCategoria t, String nome) => _limites(_d, t)[nome];
+  Map<String, double> limites(TipoCategoria t) =>
+      UnmodifiableMapView(_limites(_d, t));
   List<Gastador> get gastadores => UnmodifiableListView(_d.gastadores);
   double? get teto => _d.teto;
 

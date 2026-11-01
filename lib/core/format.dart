@@ -61,3 +61,11 @@ double lerValor(String texto) {
   if (v <= 0) throw const FormatException('Informe um valor maior que zero');
   return v;
 }
+
+const meses = [
+  'janeiro', 'fevereiro', 'março', 'abril', 'maio', 'junho', //
+  'julho', 'agosto', 'setembro', 'outubro', 'novembro', 'dezembro',
+];
+
+/// Dias do mês [mes] (1-12) de [ano]; mês 13 vira janeiro do ano seguinte.
+int diasNoMes(int ano, int mes) => DateTime(ano, mes + 1, 0).day;

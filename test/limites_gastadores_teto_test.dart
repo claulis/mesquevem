@@ -104,6 +104,7 @@ void main() {
       (tester) async {
     // tela alta: a home é uma lista preguiçosa, só monta o que aparece
     tester.view.physicalSize = const Size(800, 3000);
+    tester.view.devicePixelRatio = 1;
     addTearDown(tester.view.reset);
     final hoje = DateTime.now();
     // fora do relógio falso do teste (senão a fila do Store não anda)

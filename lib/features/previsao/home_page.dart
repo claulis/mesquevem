@@ -4,6 +4,7 @@ import '../../core/format.dart';
 import '../../state/fundo.dart';
 import '../../state/store.dart';
 import '../features.dart';
+import 'insights.dart';
 import 'previsao.dart';
 import 'resumo.dart';
 
@@ -30,6 +31,47 @@ class HomePage extends StatelessWidget {
       trailing: Text(fmtValor(gasto),
           style: acima ? const TextStyle(color: corAcima) : null),
     );
+  }
+
+  /// Gasto do mês sobre o teto, com uma marca no ritmo ideal para hoje
+  /// (dia de hoje / dias do mês). Azul; vermelha se passou do teto.
+  static Widget _barraTeto(
+      BuildContext context, double gasto, double teto, DateTime hoje) {
+    final ideal = hoje.day / diasNoMes(hoje.year, hoje.month);
+    final trilho = Theme.of(context).colorScheme.surfaceContainerHighest;
+    return Column(children: [
+      const SizedBox(height: 8),
+      SizedBox(
+        key: const Key('barraTeto'),
+        height: 14,
+        child: LayoutBuilder(
+          builder: (context, c) => Stack(children: [
+            Container(
+                decoration: BoxDecoration(
+                    color: trilho, borderRadius: BorderRadius.circular(7))),
+            FractionallySizedBox(
+              widthFactor: (gasto / teto).clamp(0.0, 1.0),
+              child: Container(
+                  decoration: BoxDecoration(
+                      color: gasto > teto ? corAcima : corTeto,
+                      borderRadius: BorderRadius.circular(7))),
+            ),
+            Positioned(
+              left: (c.maxWidth * ideal - 1).clamp(0.0, c.maxWidth - 2),
+              top: 0,
+              bottom: 0,
+              child: Container(width: 2, color: Colors.black54),
+            ),
+          ]),
+        ),
+      ),
+      const SizedBox(height: 4),
+      Text(
+          '${fmtValor(gasto)} de ${fmtValor(teto)} · ideal até hoje: '
+          '${fmtValor(teto * ideal)}',
+          textAlign: TextAlign.center,
+          style: Theme.of(context).textTheme.bodySmall),
+    ]);
   }
 
   @override
@@ -66,10 +108,31 @@ class HomePage extends StatelessWidget {
           const Text('Gasto neste mês', textAlign: TextAlign.center),
           Text(fmtValor(mes.total),
               textAlign: TextAlign.center, style: tema.headlineMedium),
-          if (teto != null)
+          if (teto != null) ...[
             Text('Teto: ${fmtValor(teto)}',
                 textAlign: TextAlign.center,
                 style: tema.titleMedium?.copyWith(color: corTeto)),
+            _barraTeto(context, mes.total, teto, hoje),
+          ],
+          const SizedBox(height: 8),
+          for (final i in insights(
+            compras: store.compras,
+            hoje: hoje,
+            teto: teto,
+            limCompra: store.limites(TipoCategoria.compra),
+            limEvento: store.limites(TipoCategoria.evento),
+            gastadores: store.gastadores,
+            previsao: valor,
+          ))
+            Card(
+              child: ListTile(
+                dense: true,
+                leading: i.alerta
+                    ? const Icon(Icons.warning_amber, color: corAcima)
+                    : const Icon(Icons.lightbulb_outline),
+                title: Text(i.texto),
+              ),
+            ),
           for (final (titulo, tipo, gastos) in [
             ('Por categoria', TipoCategoria.compra, mes.porCategoria),
             ('Por evento', TipoCategoria.evento, mes.porEvento),
