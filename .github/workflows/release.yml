@@ -1,7 +1,7 @@
 name: Release APK
 on:
   push:
-    branches: [main, master, claude/happy-clarke-2z7mos]
+    branches: [main]
   workflow_dispatch:
 permissions:
   contents: write
