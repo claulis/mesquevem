@@ -182,6 +182,16 @@ flutter run         # com um celular ou emulador Android conectado
 
 Ícone novo? Edite e rode `python3 tool/make_icon.py`.
 
+## 📜 Histórico de versões
+
+| Versão | Novidades |
+|---|---|
+| v1.0.0-9 | Versão de teste da atualização pelo app 🔄 |
+| v1.0.0-8 | Atualizar pelo app, aviso de versão nova, README novo |
+| v1.0.0-7 | Barra do teto e insights na tela principal |
+| v1.0.0-6 | Limites por categoria, gastadores, Config (backup, fundo, teto) |
+| v1.0.0-5 | Nome "Mês que Vem" e ícone nas cores do Brasil |
+
 ## ❓ FAQ
 
 **O app prevê se eu vou ganhar na Mega-Sena?**
