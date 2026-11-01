@@ -1,7 +1,8 @@
 name: Release APK
 on:
   push:
-    tags: ['v*']
+    branches: [main, master, claude/happy-clarke-2z7mos]
+  workflow_dispatch:
 permissions:
   contents: write
 jobs:
@@ -13,10 +14,13 @@ jobs:
         with: { distribution: temurin, java-version: '17' }
       - uses: subosito/flutter-action@v2
         with: { channel: stable, cache: true }
+      - run: echo "VERSION=$(grep '^version:' pubspec.yaml | cut -d' ' -f2 | cut -d+ -f1)-${{ github.run_number }}" >> $GITHUB_ENV
       - run: flutter pub get
       - run: flutter build apk --release
-      - run: mv build/app/outputs/flutter-apk/app-release.apk compras-${{ github.ref_name }}.apk
+      - run: mv build/app/outputs/flutter-apk/app-release.apk compras-v${{ env.VERSION }}.apk
       - uses: softprops/action-gh-release@v2
         with:
-          files: compras-${{ github.ref_name }}.apk
+          files: compras-v${{ env.VERSION }}.apk
+          tag_name: v${{ env.VERSION }}
+          target_commitish: ${{ github.sha }}
           generate_release_notes: true
