@@ -148,9 +148,12 @@ class ComprasPage extends StatelessWidget {
           child: const Icon(Icons.add)),
       body: compras.isEmpty
           ? const Center(child: Text('Toque em + para adicionar'))
-          : ListView(children: [
-              for (final c in compras)
-                ListTile(
+          // builder: só monta as linhas visíveis (lista pode ficar longa)
+          : ListView.builder(
+              itemCount: compras.length,
+              itemBuilder: (context, i) {
+                final c = compras[i];
+                return ListTile(
                   title: Text(c.descricao.isNotEmpty
                       ? c.descricao
                       : (c.categoria.isNotEmpty ? c.categoria : 'Compra')),
@@ -178,8 +181,9 @@ class ComprasPage extends StatelessWidget {
                       },
                     ),
                   ]),
-                ),
-            ]),
+                );
+              },
+            ),
     );
   }
 }

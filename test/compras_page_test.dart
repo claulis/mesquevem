@@ -140,4 +140,11 @@ void main() {
       expect(store.compras.single.descricao, 'Y');
     }
   });
+
+  testWidgets('lista longa monta só as linhas visíveis', (tester) async {
+    await abrir(tester, compras: [
+      for (var i = 0; i < 500; i++) Compra(DateTime(2026, 9, 1), i + 1.0)
+    ]);
+    expect(find.byType(ListTile).evaluate().length, lessThan(50));
+  });
 }
