@@ -136,6 +136,8 @@ void main() {
     expect(cor('Teto: R\$ 1000,00'), corTeto);
     expect(cor('Limite: R\$ 50,00'), corLimite);
     expect(cor('Limite: R\$ 10,00'), corAcima);
+    // além da cor, texto: quem não distingue vermelho também percebe
+    expect(find.text(' acima do limite'), findsOneWidget);
   });
 
   testWidgets('home: sem teto cadastrado não mostra a linha', (tester) async {

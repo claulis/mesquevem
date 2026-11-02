@@ -1,6 +1,7 @@
 import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:path_provider/path_provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../core/ambiente.dart';
 
 /// Imagem de fundo da tela principal. Fica num arquivo na pasta do app, não
@@ -11,6 +12,11 @@ class Fundo extends ChangeNotifier {
 
   File? _arquivo;
   File? get arquivo => _arquivo;
+
+  /// Opacidade da imagem na tela principal (0,05 a 1). Baixa deixa o texto
+  /// legível; o usuário escolhe em Personalização do fundo.
+  double opacidade = opacidadePadrao;
+  static const opacidadePadrao = 0.3, _chaveOpacidade = 'fundo_opacidade';
 
   static const _prefixo = 'fundo-';
 
@@ -25,6 +31,9 @@ class Fundo extends ChangeNotifier {
     try {
       final fs = await _existentes();
       _arquivo = fs.isEmpty ? null : fs.last;
+      opacidade =
+          (await SharedPreferences.getInstance()).getDouble(_chaveOpacidade) ??
+              opacidadePadrao;
       notifyListeners();
     } on Exception {
       // sem fundo
@@ -43,6 +52,16 @@ class Fundo extends ChangeNotifier {
         _arquivo = novo;
         notifyListeners();
       }, 'não foi possível gravar a imagem');
+
+  /// Muda na hora (a tela acompanha o controle deslizante) e grava.
+  Future<void> definirOpacidade(double valor) async {
+    opacidade = valor.clamp(0.05, 1.0);
+    notifyListeners();
+    await doAmbiente(
+        () async => (await SharedPreferences.getInstance())
+            .setDouble(_chaveOpacidade, opacidade),
+        'não foi possível gravar a opacidade');
+  }
 
   Future<void> remover() => doAmbiente(() async {
         for (final f in await _existentes()) {

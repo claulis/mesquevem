@@ -11,7 +11,8 @@ import 'resumo.dart';
 
 /// Cores pedidas para o limite (azul claro) e o teto (azul); acima do limite,
 /// vermelho.
-const corLimite = Colors.lightBlue,
+// azul claro mais escuro que Colors.lightBlue: contraste legível no branco
+const corLimite = Color(0xFF0277BD),
     corTeto = Colors.blue,
     corAcima = Colors.red;
 
@@ -33,8 +34,17 @@ class HomePage extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               mainAxisSize: MainAxisSize.min,
               children: [
-                Text('Limite: ${fmtValor(limite)}',
-                    style: TextStyle(color: cor)),
+                Row(children: [
+                  Text('Limite: ${fmtValor(limite)}',
+                      style: TextStyle(color: cor)),
+                  // não só a cor: quem não distingue vermelho também vê
+                  if (acima) ...[
+                    const SizedBox(width: 6),
+                    const Icon(Icons.warning_amber, size: 14, color: corAcima),
+                    const Text(' acima do limite',
+                        style: TextStyle(color: corAcima)),
+                  ],
+                ]),
                 const SizedBox(height: 4),
                 LinearProgressIndicator(
                   value: (gasto / limite).clamp(0.0, 1.0),
@@ -124,7 +134,8 @@ class HomePage extends StatelessWidget {
     final mes = gastoDoMes(store.compras, hoje);
     final teto = store.teto;
     // opcional: os testes montam o app sem ele
-    final fundo = context.watch<Fundo?>()?.arquivo;
+    final fundo = context.watch<Fundo?>();
+    final imagem = fundo?.arquivo;
     final tema = Theme.of(context).textTheme;
     final nInsights = insightsDe(store, hoje).length;
     return Scaffold(
@@ -150,11 +161,14 @@ class HomePage extends StatelessWidget {
       ),
       body: DecoratedBox(
         decoration: BoxDecoration(
-          image: fundo == null
+          image: imagem == null
               ? null
-              // translúcida, para o texto continuar legível
+              // translúcida (o usuário escolhe quanto), para o texto
+              // continuar legível
               : DecorationImage(
-                  image: FileImage(fundo), fit: BoxFit.cover, opacity: 0.3),
+                  image: FileImage(imagem),
+                  fit: BoxFit.cover,
+                  opacity: fundo!.opacidade),
         ),
         // rolável: com fonte grande o conteúdo pode não caber na tela;
         // embaixo, espaço para o botão "+ Compra" não cobrir a última linha
