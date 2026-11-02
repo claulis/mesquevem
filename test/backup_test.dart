@@ -267,4 +267,19 @@ void main() {
     expect(find.text('Dados importados'), findsNothing);
     expect(store.compras.single.descricao, 'Atual');
   });
+
+  test('backup grande demais é recusado sem ler o arquivo inteiro', () async {
+    var lidos = 0;
+    Stream<List<int>> gigante() async* {
+      for (var i = 0; i < 1000; i++) {
+        lidos++;
+        yield List.filled(1024, 32);
+      }
+    }
+
+    await expectLater(lerComLimite(gigante(), limite: 10 * 1024),
+        throwsA(isA<FormatException>()));
+    expect(lidos, lessThan(20), reason: 'parou logo depois do limite');
+    expect(await lerComLimite(Stream.value([1, 2, 3]), limite: 10), [1, 2, 3]);
+  });
 }

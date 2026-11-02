@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:typed_data';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -39,11 +40,32 @@ Future<bool> salvarComSeletor(String nome, String texto) => doAmbiente(
 /// Bytes que não são UTF-8 lançam [FormatException] (arquivo inválido), não
 /// [ErroDoApp] (problema do ambiente).
 Future<String?> abrirComSeletor() async {
-  final bytes = await doAmbiente(() async {
-    final f = await FilePicker.pickFile();
-    return f == null ? null : await f.readAsBytes();
-  }, 'erro do seletor de arquivos');
-  return bytes == null ? null : utf8.decode(bytes);
+  final f = await doAmbiente(
+      () => FilePicker.pickFile(), 'erro do seletor de arquivos');
+  if (f == null) return null;
+  return utf8.decode(await lerComLimite(f.readAsByteStream()));
+}
+
+/// Backup real tem centenas de KB; acima disso não é backup do app.
+const tamanhoMaximoBackup = 10 * 1024 * 1024;
+
+/// Lê em pedaços e para assim que passar de [limite]: um arquivo gigante
+/// (ou malicioso) não chega a ser carregado inteiro na memória. Passou do
+/// limite: [FormatException] (arquivo inválido, nada é importado).
+Future<List<int>> lerComLimite(Stream<List<int>> bytes,
+    {int limite = tamanhoMaximoBackup}) async {
+  final lido = BytesBuilder(copy: false);
+  await doAmbiente(() async {
+    await for (final b in bytes) {
+      lido.add(b);
+      if (lido.length > limite) break;
+    }
+  }, 'erro ao ler o arquivo');
+  if (lido.length > limite) {
+    throw FormatException('arquivo grande demais para ser um backup '
+        '(máximo ${limite ~/ (1024 * 1024)} MB)');
+  }
+  return lido.takeBytes();
 }
 
 class BackupPage extends StatelessWidget {
