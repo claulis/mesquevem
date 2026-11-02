@@ -48,7 +48,9 @@ class Compra {
       throw FormatException('valor inválido: $valor');
     }
     return Compra(
-      DateTime.parse(j['data']),
+      // com "Z" (UTC, backup editado à mão) a data vira hora local: o mês
+      // é comparado no fuso do aparelho. Sem "Z" já é local (nada muda).
+      DateTime.parse(j['data']).toLocal(),
       valor,
       id: j['id'],
       descricao: j['descricao'] ?? '',

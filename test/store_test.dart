@@ -241,6 +241,16 @@ void main() {
     expect(outro.compras.map((c) => c.valor), [2, 1]);
   });
 
+  test('data em UTC (com Z) é lida como hora local', () {
+    final c = Compra.fromJson(
+        {'id': 'a', 'data': '2026-09-30T23:30:00.000Z', 'valor': 1});
+    expect(c.data.isUtc, isFalse);
+    expect(c.data, DateTime.utc(2026, 9, 30, 23, 30).toLocal());
+    final local = Compra.fromJson(
+        {'id': 'b', 'data': '2026-09-30T23:30:00.000', 'valor': 1});
+    expect(local.data, DateTime(2026, 9, 30, 23, 30), reason: 'local não muda');
+  });
+
   test('copiaCom preserva todos os campos (pega campo novo esquecido)', () {
     final c = Compra(DateTime(2026, 9, 1, 10, 30), 12.5,
         descricao: 'd', categoria: 'c', evento: 'e');
