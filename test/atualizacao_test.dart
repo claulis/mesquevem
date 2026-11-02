@@ -22,6 +22,13 @@ Map<String, dynamic> respostaGitHub(String tag,
     };
 
 void main() {
+  test('.gitignore da raiz bloqueia a chave de assinatura', () {
+    final g = File('.gitignore').readAsLinesSync();
+    for (final p in ['*.jks', '*.keystore', 'key.properties', '*.b64']) {
+      expect(g, contains(p), reason: p);
+    }
+  });
+
   test('versão release declara INTERNET (sem ela: "sem conexão" com internet)',
       () {
     // o manifest de debug/profile tem a permissão; o release só tem o main

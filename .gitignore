@@ -43,3 +43,10 @@ app.*.map.json
 /android/app/debug
 /android/app/profile
 /android/app/release
+
+# Chave de assinatura e derivados: nunca no repositório (repo público).
+# O android/.gitignore só cobre android/; isto cobre o projeto inteiro.
+*.jks
+*.keystore
+key.properties
+*.b64
