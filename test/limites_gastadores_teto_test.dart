@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:provider/provider.dart';
+import 'package:compras/core/format.dart';
 import 'package:compras/data/compra.dart';
 import 'package:compras/data/gastador.dart';
 import 'package:compras/data/repositorio.dart';
@@ -184,11 +185,48 @@ void main() {
         lessThan(tester.getTopLeft(find.text('Lazer')).dy));
     // zeradas recolhidas até tocar
     expect(find.text('Alimentação'), findsNothing);
-    await tester.tap(find.text('Sem gasto neste mês (2)'));
+    await tester.tap(find.text('Sem gasto no mês (2)'));
     await tester.pumpAndSettle();
     expect(find.text('Alimentação'), findsOneWidget);
     // eventos: só o que teve gasto
     expect(find.text('Viagem'), findsOneWidget);
     expect(find.text('Natal'), findsNothing);
+  });
+
+  testWidgets('home: setas e deslizar mostram meses anteriores',
+      (tester) async {
+    tester.view.physicalSize = const Size(800, 3000);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    final hoje = DateTime.now();
+    final anterior = DateTime(hoje.year, hoje.month - 1, 10);
+    await tester.runAsync(() async {
+      await store.definirTeto(50);
+      await store.salvarCompra(Compra(anterior, 100));
+      await store.salvarCompra(Compra(hoje, 10));
+    });
+    await tester.pumpWidget(ChangeNotifierProvider.value(
+        value: store, child: const MaterialApp(home: HomePage())));
+    IconButton seta(String dica) => tester.widget<IconButton>(find.ancestor(
+        of: find.byTooltip(dica), matching: find.byType(IconButton)));
+    String nome(DateTime d) => '${meses[d.month - 1]} de ${d.year}';
+
+    expect(find.text(nome(hoje)), findsOneWidget);
+    expect(find.text('Gasto até agora'), findsOneWidget);
+    expect(seta('Próximo mês').onPressed, isNull, reason: 'não há futuro');
+
+    await tester.tap(find.byTooltip('Mês anterior'));
+    await tester.pump();
+    expect(find.text(nome(anterior)), findsOneWidget);
+    expect(find.text('Gasto no mês'), findsOneWidget);
+    expect(find.text('Passou do teto em R\$ 50,00'), findsOneWidget);
+    expect(seta('Mês anterior').onPressed, isNull,
+        reason: 'antes da primeira compra não há o que ver');
+
+    // deslizar para a esquerda volta ao mês atual
+    await tester.fling(
+        find.byKey(const Key('cartaoMes')), const Offset(-400, 0), 1000);
+    await tester.pumpAndSettle();
+    expect(find.text(nome(hoje)), findsOneWidget);
   });
 }

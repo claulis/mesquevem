@@ -1,3 +1,4 @@
+import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../core/format.dart';
@@ -23,8 +24,11 @@ Color corDoLimite(BuildContext context) =>
         ? corLimiteEscuro
         : corLimite;
 
-class HomePage extends StatelessWidget {
+class HomePage extends StatefulWidget {
   const HomePage({super.key});
+
+  @override
+  State<HomePage> createState() => _HomePageState();
 
   /// Linha de uma categoria: nome e gasto do mês; embaixo, o limite (se
   /// houver) em azul claro, ou vermelho se o gasto passou dele, com uma barra
@@ -85,7 +89,7 @@ class HomePage extends StatelessWidget {
       if (tipo == TipoCategoria.compra && sem.isNotEmpty)
         ExpansionTile(
           dense: true,
-          title: Text('Sem gasto neste mês (${sem.length})'),
+          title: Text('Sem gasto no mês (${sem.length})'),
           children: [
             for (final n in sem)
               _categoria(context, n, 0, store.limite(tipo, n)),
@@ -95,10 +99,12 @@ class HomePage extends StatelessWidget {
   }
 
   /// Gasto do mês sobre o teto, com uma marca no ritmo ideal para hoje
-  /// (dia de hoje / dias do mês). Azul; vermelha se passou do teto.
+  /// (dia de hoje / dias do mês). Azul; vermelha se passou do teto. Mês já
+  /// fechado ([hoje] null) não tem ritmo ideal.
   static Widget _barraTeto(
-      BuildContext context, double gasto, double teto, DateTime hoje) {
-    final ideal = hoje.day / diasNoMes(hoje.year, hoje.month);
+      BuildContext context, double gasto, double teto, DateTime? hoje) {
+    final ideal =
+        hoje == null ? null : hoje.day / diasNoMes(hoje.year, hoje.month);
     final trilho = Theme.of(context).colorScheme.surfaceContainerHighest;
     return Column(children: [
       const SizedBox(height: 8),
@@ -117,36 +123,55 @@ class HomePage extends StatelessWidget {
                       color: gasto > teto ? corAcima : corTeto,
                       borderRadius: BorderRadius.circular(7))),
             ),
-            Positioned(
-              left: (c.maxWidth * ideal - 1).clamp(0.0, c.maxWidth - 2),
-              top: 0,
-              bottom: 0,
-              // cor do texto do tema: aparece no claro e no escuro
-              child: Container(
-                  width: 2,
-                  color: Theme.of(context)
-                      .colorScheme
-                      .onSurface
-                      .withValues(alpha: 0.6)),
-            ),
+            if (ideal != null)
+              Positioned(
+                left: (c.maxWidth * ideal - 1).clamp(0.0, c.maxWidth - 2),
+                top: 0,
+                bottom: 0,
+                // cor do texto do tema: aparece no claro e no escuro
+                child: Container(
+                    width: 2,
+                    color: Theme.of(context)
+                        .colorScheme
+                        .onSurface
+                        .withValues(alpha: 0.6)),
+              ),
           ]),
         ),
       ),
       const SizedBox(height: 4),
       Text(
-          '${fmtValor(gasto)} de ${fmtValor(teto)} · ideal até hoje: '
-          '${fmtValor(teto * ideal)}',
+          '${fmtValor(gasto)} de ${fmtValor(teto)}'
+          '${ideal == null ? '' : ' · ideal até hoje: ${fmtValor(teto * ideal)}'}',
           textAlign: TextAlign.center,
           style: Theme.of(context).textTheme.bodySmall),
     ]);
   }
+}
+
+class _HomePageState extends State<HomePage> {
+  /// Mês exibido no cartão e nas categorias: 0 = atual, -1 = anterior...
+  int _desloc = 0;
 
   @override
   Widget build(BuildContext context) {
     final store = context.watch<Store>();
     final hoje = DateTime.now();
     final (valor, metodo) = previsao(store.compras, hoje);
-    final mes = gastoDoMes(store.compras, hoje);
+    final visto = DateTime(hoje.year, hoje.month + _desloc);
+    final mesAtual = _desloc == 0;
+    final mes = gastoDoMes(store.compras, visto);
+    // volta até o mês da primeira compra, no máximo a janela da previsão
+    // (uma data absurda de backup não cria anos de meses vazios)
+    final primeiro = store.compras.isEmpty
+        ? 0
+        : store.compras
+            .map((c) =>
+                (c.data.year - hoje.year) * 12 + c.data.month - hoje.month)
+            .reduce(min);
+    final podeVoltar = _desloc > max(primeiro, -janelaMeses);
+    final podeAvancar = _desloc < 0;
+    void irPara(int d) => setState(() => _desloc = d);
     final teto = store.teto;
     // opcional: os testes montam o app sem ele
     final fundo = context.watch<Fundo?>();
@@ -190,35 +215,73 @@ class HomePage extends StatelessWidget {
         child: ListView(
             padding: const EdgeInsets.fromLTRB(16, 16, 16, 88),
             children: [
-              // o que se acompanha no dia a dia vem primeiro: o mês atual
-              Card(
-                key: const Key('cartaoMes'),
-                child: Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: Column(children: [
-                    Text('Gasto em ${meses[hoje.month - 1]}',
-                        textAlign: TextAlign.center),
-                    Text(fmtValor(mes.total),
-                        textAlign: TextAlign.center, style: tema.displaySmall),
-                    if (teto != null) ...[
-                      Text('Teto: ${fmtValor(teto)}',
+              // o que se acompanha no dia a dia vem primeiro: o mês atual;
+              // setas ou deslizar o cartão mostram os meses anteriores
+              GestureDetector(
+                onHorizontalDragEnd: (d) {
+                  final v = d.primaryVelocity ?? 0;
+                  if (v > 300 && podeVoltar) irPara(_desloc - 1);
+                  if (v < -300 && podeAvancar) irPara(_desloc + 1);
+                },
+                child: Card(
+                  key: const Key('cartaoMes'),
+                  child: Padding(
+                    padding: const EdgeInsets.all(16),
+                    child: Column(children: [
+                      Row(children: [
+                        IconButton(
+                          icon: const Icon(Icons.chevron_left),
+                          tooltip: 'Mês anterior',
+                          onPressed:
+                              podeVoltar ? () => irPara(_desloc - 1) : null,
+                        ),
+                        Expanded(
+                          child: Text(
+                              '${meses[visto.month - 1]} de ${visto.year}',
+                              textAlign: TextAlign.center,
+                              style: tema.titleMedium),
+                        ),
+                        IconButton(
+                          icon: const Icon(Icons.chevron_right),
+                          tooltip: 'Próximo mês',
+                          onPressed:
+                              podeAvancar ? () => irPara(_desloc + 1) : null,
+                        ),
+                      ]),
+                      Text(mesAtual ? 'Gasto até agora' : 'Gasto no mês',
+                          textAlign: TextAlign.center),
+                      Text(fmtValor(mes.total),
                           textAlign: TextAlign.center,
-                          style: tema.titleMedium?.copyWith(color: corTeto)),
-                      _barraTeto(context, mes.total, teto, hoje),
-                      const SizedBox(height: 8),
-                      if (mes.total > teto)
-                        Text('Teto estourado em ${fmtValor(mes.total - teto)}',
+                          style: tema.displaySmall),
+                      if (teto != null) ...[
+                        Text('Teto: ${fmtValor(teto)}',
                             textAlign: TextAlign.center,
-                            style: tema.titleSmall?.copyWith(color: corAcima))
-                      else
-                        Text(
-                            'Pode gastar '
-                            '${fmtValor(porDiaAteOFim(mes.total, teto, hoje))} '
-                            'por dia até o fim do mês',
-                            textAlign: TextAlign.center,
-                            style: tema.titleSmall),
-                    ],
-                  ]),
+                            style: tema.titleMedium?.copyWith(color: corTeto)),
+                        HomePage._barraTeto(
+                            context, mes.total, teto, mesAtual ? hoje : null),
+                        const SizedBox(height: 8),
+                        if (mes.total > teto)
+                          Text(
+                              '${mesAtual ? 'Teto estourado' : 'Passou do teto'}'
+                              ' em ${fmtValor(mes.total - teto)}',
+                              textAlign: TextAlign.center,
+                              style: tema.titleSmall?.copyWith(color: corAcima))
+                        else if (mesAtual)
+                          Text(
+                              'Pode gastar '
+                              '${fmtValor(porDiaAteOFim(mes.total, teto, hoje))} '
+                              'por dia até o fim do mês',
+                              textAlign: TextAlign.center,
+                              style: tema.titleSmall)
+                        else
+                          Text(
+                              'Ficou ${fmtValor(teto - mes.total)} abaixo do '
+                              'teto',
+                              textAlign: TextAlign.center,
+                              style: tema.titleSmall),
+                      ],
+                    ]),
+                  ),
                 ),
               ),
               Card(
@@ -244,10 +307,10 @@ class HomePage extends StatelessWidget {
                   ),
                 ),
               ),
-              ..._secao(context, store, 'Por categoria', TipoCategoria.compra,
-                  mes.porCategoria),
-              ..._secao(context, store, 'Por evento', TipoCategoria.evento,
-                  mes.porEvento),
+              ...HomePage._secao(context, store, 'Por categoria',
+                  TipoCategoria.compra, mes.porCategoria),
+              ...HomePage._secao(context, store, 'Por evento',
+                  TipoCategoria.evento, mes.porEvento),
             ]),
       ),
     );
