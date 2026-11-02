@@ -224,7 +224,10 @@ class Atualizador extends ChangeNotifier {
         try {
           final m = await _baixarTrecho(r, parte, meta, () => tentativa = 0);
           _mudar(Fase.conferindo);
-          final ok = await parte.length() == m['total'] &&
+          // tamanho desconhecido (-1: servidor sem Content-Length) não é
+          // comparado; o SHA-256, obrigatório, garante a integridade
+          final tamanho = m['total'] as int;
+          final ok = (tamanho < 0 || await parte.length() == tamanho) &&
               (await sha256.bind(parte.openRead()).first).toString() ==
                   r.sha256;
           if (!ok) {

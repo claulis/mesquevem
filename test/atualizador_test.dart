@@ -20,6 +20,10 @@ class Servidor {
   /// false: responde sem ETag (o cliente não pode usar If-Range).
   bool comEtag = true;
 
+  /// false: não informa o tamanho (transferência em partes, sem
+  /// Content-Length).
+  bool comTamanho = true;
+
   /// Se não nulo, a próxima resposta para neste byte e a conexão cai.
   int? cortarEm;
   final pedidos = <String?>[]; // cabeçalho Range de cada pedido ao /cdn
@@ -58,7 +62,7 @@ class Servidor {
           res.headers.set('content-range',
               'bytes $inicio-${dados.length - 1}/${dados.length}');
         }
-        res.contentLength = dados.length - inicio;
+        if (comTamanho) res.contentLength = dados.length - inicio;
         final corte = cortarEm;
         if (corte != null && corte > inicio) {
           cortarEm = null;
@@ -323,5 +327,15 @@ void main() {
     await fim;
     expect(a.fase, Fase.pronto);
     expect(await apk().exists(), isTrue);
+  });
+
+  test('servidor que não informa o tamanho: baixa e confere pelo SHA-256',
+      () async {
+    srv.comTamanho = false;
+    final a = novo();
+    await a.atualizar();
+    expect(a.erro, isNull);
+    expect(a.fase, Fase.pronto);
+    expect(await apk().readAsBytes(), dados);
   });
 }

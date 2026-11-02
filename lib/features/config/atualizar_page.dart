@@ -57,8 +57,11 @@ class AtualizarPage extends StatelessWidget {
           LinearProgressIndicator(value: pct),
           const SizedBox(height: 8),
           if (a.fase == Fase.baixando)
-            Text('Baixando… ${((pct ?? 0) * 100).floor()}% '
-                '(${_mb(a.recebidos)} de ${_mb(a.total)} MB)'),
+            Text(pct == null
+                // servidor não informou o tamanho: só o que já veio
+                ? 'Baixando… ${_mb(a.recebidos)} MB'
+                : 'Baixando… ${(pct * 100).floor()}% '
+                    '(${_mb(a.recebidos)} de ${_mb(a.total)} MB)'),
           if (a.fase == Fase.semConexao)
             Text('Sem conexão: tentando de novo em ${a.tentarEm}s. '
                 'O download continua de onde parou '
