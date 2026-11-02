@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import '../../core/dialogo.dart';
 import '../../core/confirmar.dart';
 import '../../core/format.dart';
 import '../../core/salvar.dart';
@@ -18,7 +19,8 @@ class CategoriaPage extends StatelessWidget {
     String? erro, erroLim;
     final r = await showDialog<(String, double?)>(
       context: context,
-      builder: (ctx) => StatefulBuilder(
+      builder: (ctx) => DonoDosCampos(
+        campos: [ctrl, lim],
         builder: (ctx, setD) {
           void salvar() {
             final e = store.nomeInvalido(tipo, ctrl.text, atual: atual);

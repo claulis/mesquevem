@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import '../../core/dialogo.dart';
 import '../../core/confirmar.dart';
 import '../../core/format.dart';
 import '../../core/salvar.dart';
@@ -42,7 +43,8 @@ class ComprasPage extends StatelessWidget {
     // o diálogo devolve o valor já validado, ou null se cancelado
     final v = await showDialog<double>(
       context: context,
-      builder: (ctx) => StatefulBuilder(
+      builder: (ctx) => DonoDosCampos(
+        campos: [desc, valor],
         builder: (ctx, setD) => AlertDialog(
           title: Text(c == null ? 'Nova compra' : 'Editar compra'),
           content: SingleChildScrollView(
@@ -121,6 +123,8 @@ class ComprasPage extends StatelessWidget {
       ),
     );
     if (v == null || !context.mounted) return;
+    // lido já: o diálogo libera o campo quando termina de sair da tela
+    final descricao = desc.text.trim();
     await avisandoFalha(
         context,
         () => store.salvarCompra(
@@ -128,7 +132,7 @@ class ComprasPage extends StatelessWidget {
               data,
               v,
               id: c?.id,
-              descricao: desc.text.trim(),
+              descricao: descricao,
               categoria: cat ?? '',
               evento: ev ?? '',
               gastador: gast,

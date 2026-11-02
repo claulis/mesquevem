@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import '../../core/dialogo.dart';
 import '../../core/confirmar.dart';
 import '../../core/format.dart';
 import '../../core/salvar.dart';
@@ -19,7 +20,8 @@ class GastadoresPage extends StatelessWidget {
 
     final novo = await showDialog<Gastador>(
       context: context,
-      builder: (ctx) => StatefulBuilder(
+      builder: (ctx) => DonoDosCampos(
+        campos: [nome],
         builder: (ctx, setD) => AlertDialog(
           title: Text(g == null ? 'Novo gastador' : 'Editar gastador'),
           content: SingleChildScrollView(

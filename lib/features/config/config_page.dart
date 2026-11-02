@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import '../../core/dialogo.dart';
 import '../../core/format.dart';
 import '../../core/salvar.dart';
 import '../../state/store.dart';
@@ -22,44 +23,47 @@ class ConfigPage extends StatelessWidget {
     // (valor,) para distinguir "remover" (null) de cancelar (diálogo null)
     final r = await showDialog<(double?,)>(
       context: context,
-      builder: (ctx) => StatefulBuilder(builder: (ctx, setD) {
-        void salvar() {
-          try {
-            Navigator.pop(ctx, (
-              ctrl.text.trim().isEmpty
-                  ? null
-                  : ctrl.text == inicial
-                      ? atual
-                      : lerValor(ctrl.text),
-            ));
-          } on FormatException catch (e) {
-            setD(() => erro = e.message);
-          }
-        }
+      builder: (ctx) => DonoDosCampos(
+          campos: [ctrl],
+          builder: (ctx, setD) {
+            void salvar() {
+              try {
+                Navigator.pop(ctx, (
+                  ctrl.text.trim().isEmpty
+                      ? null
+                      : ctrl.text == inicial
+                          ? atual
+                          : lerValor(ctrl.text),
+                ));
+              } on FormatException catch (e) {
+                setD(() => erro = e.message);
+              }
+            }
 
-        return AlertDialog(
-          title: const Text('Teto de gastos'),
-          content: TextField(
-            controller: ctrl,
-            autofocus: true,
-            onSubmitted: (_) => salvar(),
-            onChanged: (_) {
-              if (erro != null) setD(() => erro = null);
-            },
-            keyboardType: const TextInputType.numberWithOptions(decimal: true),
-            decoration: InputDecoration(
-                labelText: 'Total que pode gastar por mês (R\$)',
-                helperText: 'Vazio = sem teto',
-                errorText: erro),
-          ),
-          actions: [
-            TextButton(
-                onPressed: () => Navigator.pop(ctx),
-                child: const Text('Cancelar')),
-            FilledButton(onPressed: salvar, child: const Text('Salvar')),
-          ],
-        );
-      }),
+            return AlertDialog(
+              title: const Text('Teto de gastos'),
+              content: TextField(
+                controller: ctrl,
+                autofocus: true,
+                onSubmitted: (_) => salvar(),
+                onChanged: (_) {
+                  if (erro != null) setD(() => erro = null);
+                },
+                keyboardType:
+                    const TextInputType.numberWithOptions(decimal: true),
+                decoration: InputDecoration(
+                    labelText: 'Total que pode gastar por mês (R\$)',
+                    helperText: 'Vazio = sem teto',
+                    errorText: erro),
+              ),
+              actions: [
+                TextButton(
+                    onPressed: () => Navigator.pop(ctx),
+                    child: const Text('Cancelar')),
+                FilledButton(onPressed: salvar, child: const Text('Salvar')),
+              ],
+            );
+          }),
     );
     if (r == null || !context.mounted) return;
     await avisandoFalha(context, () => store.definirTeto(r.$1));
