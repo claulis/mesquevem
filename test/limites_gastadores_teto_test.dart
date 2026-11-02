@@ -74,6 +74,11 @@ void main() {
     expect(ids, isNot(contains('')), reason: "'' é o valor de \"Todos\"");
     expect(Dados.deTexto(b()).gastadores.map((g) => g.id), ids,
         reason: 'mesmo id a cada leitura');
+    final semNome = Dados.deTexto('{"versao": 3, "compras": [], '
+        '"catCompra": [], "catEvento": [], "gastadores": ['
+        '{"id": "x", "nome": "  ", "aniversario": "2015-03-04T00:00:00.000", '
+        '"sexo": "F"}]}');
+    expect(semNome.gastadores.single.nome, 'Sem nome');
   });
 
   test('limite inválido ou de categoria inexistente no backup', () {

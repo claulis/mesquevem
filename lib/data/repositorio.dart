@@ -152,7 +152,7 @@ class Dados {
   ///
   /// Id vazio ou ausente (backup editado à mão) ganha um id fixo pela
   /// posição: vazio colidiria com "Todos" (o gastador '' das compras) e um id
-  /// aleatório mudaria a cada leitura.
+  /// aleatório mudaria a cada leitura. Nome vazio ou ausente vira "Sem nome".
   static List<Gastador> _gastadoresValidos(Object? lista) {
     final ids = <String>{};
     return [
@@ -160,6 +160,8 @@ class Dados {
         if (Gastador.fromJson({
           ...g as Map<String, dynamic>,
           if ((g['id'] as String? ?? '').isEmpty) 'id': 'gastador-$i',
+          // nome vazio viraria um item em branco na lista e no formulário
+          if ((g['nome'] as String? ?? '').trim().isEmpty) 'nome': 'Sem nome',
         })
             case final x when ids.add(x.id))
           x
