@@ -202,6 +202,13 @@ class Atualizador extends ChangeNotifier {
     // tudo dentro do try: se preparar a pasta falhar (disco cheio, sem
     // permissão), o finally ainda libera _rodando e a tela não fica travada
     try {
+      // sem o SHA-256 informado pelo GitHub não há como conferir o arquivo:
+      // não baixa (a página da release continua disponível pelo navegador)
+      if (r.sha256 == null) {
+        return _mudar(Fase.erro,
+            erro: 'Esta versão não informa o código de integridade (SHA-256). '
+                'Atualize pela página da versão no GitHub.');
+      }
       final dir = await _dir();
       final parte = File(_caminho(dir, r, '.apk.parte'));
       final meta = File(_caminho(dir, r, '.json'));
@@ -217,9 +224,8 @@ class Atualizador extends ChangeNotifier {
           final m = await _baixarTrecho(r, parte, meta, () => tentativa = 0);
           _mudar(Fase.conferindo);
           final ok = await parte.length() == m['total'] &&
-              (r.sha256 == null ||
-                  (await sha256.bind(parte.openRead()).first).toString() ==
-                      r.sha256);
+              (await sha256.bind(parte.openRead()).first).toString() ==
+                  r.sha256;
           if (!ok) {
             await _apagar([parte, meta]);
             if (++corrompidos > 1) {

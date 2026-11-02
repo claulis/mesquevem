@@ -274,4 +274,18 @@ void main() {
     expect(a.fase, Fase.ocioso);
     expect(srv.pedidos, isEmpty);
   });
+
+  test('versão sem SHA-256 não é baixada', () async {
+    final a = Atualizador(
+      verificar: () async => Release(9, 'v1.0.0-9', srv.url),
+      pasta: () async => pasta,
+      atual: 8,
+      exigirHttps: false,
+    );
+    await a.atualizar();
+    expect(a.fase, Fase.erro);
+    expect(a.erro, contains('SHA-256'));
+    expect(srv.pedidos, isEmpty);
+    expect(a.rodando, isFalse);
+  });
 }
