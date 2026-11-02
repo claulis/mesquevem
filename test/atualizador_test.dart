@@ -16,6 +16,9 @@ class Servidor {
   Uint8List dados;
   String etag = '"v1"';
 
+  /// false: responde sem ETag (o cliente não pode usar If-Range).
+  bool comEtag = true;
+
   /// Se não nulo, a próxima resposta para neste byte e a conexão cai.
   int? cortarEm;
   final pedidos = <String?>[]; // cabeçalho Range de cada pedido ao /cdn
@@ -49,7 +52,7 @@ class Servidor {
         }
         res.statusCode = inicio > 0 ? 206 : 200;
         status.add(res.statusCode);
-        res.headers.set('etag', etag);
+        if (comEtag) res.headers.set('etag', etag);
         if (inicio > 0) {
           res.headers.set('content-range',
               'bytes $inicio-${dados.length - 1}/${dados.length}');
@@ -287,5 +290,16 @@ void main() {
     expect(a.erro, contains('SHA-256'));
     expect(srv.pedidos, isEmpty);
     expect(a.rodando, isFalse);
+  });
+
+  test('sem ETag não retoma pela metade: recomeça do zero', () async {
+    srv
+      ..comEtag = false
+      ..cortarEm = (dados.length * 0.4).round();
+    final a = novo();
+    await a.atualizar();
+    expect(srv.pedidos, [null, null], reason: 'segundo pedido sem Range');
+    expect(a.fase, Fase.pronto);
+    expect(await apk().readAsBytes(), dados);
   });
 }

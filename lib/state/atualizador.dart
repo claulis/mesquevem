@@ -306,6 +306,9 @@ class Atualizador extends ChangeNotifier {
       final totalSalvo = m['total'] as int;
       // ponto salvo incoerente (parte maior que o arquivo): recomeça
       if (inicio > 0 && (totalSalvo == 0 || inicio > totalSalvo)) inicio = 0;
+      // sem ETag não há If-Range: o servidor continuaria mesmo que o arquivo
+      // tivesse mudado, juntando pedaços de dois APKs. Recomeça do zero.
+      if (inicio > 0 && m['etag'] == null) inicio = 0;
 
       // redirect manual: a URL assinada do CDN expira, então é renovada a
       // cada tentativa, e o Range vai junto
