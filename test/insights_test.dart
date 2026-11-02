@@ -5,6 +5,7 @@ import 'package:compras/data/compra.dart';
 import 'package:compras/data/gastador.dart';
 import 'package:compras/features/previsao/home_page.dart';
 import 'package:compras/features/previsao/insights.dart';
+import 'package:compras/features/previsao/insights_page.dart';
 import 'package:compras/state/store.dart';
 import 'store_test.dart' show RepositorioMemoria;
 
@@ -135,5 +136,34 @@ void main() {
             of: find.byKey(const Key('cartaoMes')),
             matching: find.textContaining('Pode gastar')),
         findsOneWidget);
+  });
+
+  testWidgets('botão de insights: contador igual ao número de cartões',
+      (tester) async {
+    final store = Store(RepositorioMemoria());
+    await tester.runAsync(store.carregar);
+    Future<void> montar() => tester.pumpWidget(ChangeNotifierProvider.value(
+        value: store, child: const MaterialApp(home: HomePage())));
+    Badge selo() => tester.widget<Badge>(find.byType(Badge));
+
+    await montar();
+    expect(selo().isLabelVisible, isFalse, reason: 'sem insight, sem número');
+
+    await tester.runAsync(() async {
+      await store.definirTeto(1000);
+      await store.salvarCompra(Compra(DateTime.now(), 10));
+    });
+    await montar();
+    await tester.pump();
+    final n = insightsDe(store, DateTime.now()).length;
+    expect(n, greaterThan(0));
+    expect(selo().isLabelVisible, isTrue);
+    expect(find.descendant(of: find.byType(Badge), matching: find.text('$n')),
+        findsOneWidget);
+
+    await tester.tap(find.byTooltip('Insights'));
+    await tester.pumpAndSettle();
+    expect(find.widgetWithText(AppBar, 'Insights'), findsOneWidget);
+    expect(find.byType(Card), findsNWidgets(n));
   });
 }

@@ -5,6 +5,7 @@ import '../../state/fundo.dart';
 import '../../state/store.dart';
 import '../compras/compras_page.dart';
 import 'insights.dart';
+import 'insights_page.dart';
 import 'previsao.dart';
 import 'resumo.dart';
 
@@ -125,8 +126,21 @@ class HomePage extends StatelessWidget {
     // opcional: os testes montam o app sem ele
     final fundo = context.watch<Fundo?>()?.arquivo;
     final tema = Theme.of(context).textTheme;
+    final nInsights = insightsDe(store, hoje).length;
     return Scaffold(
-      appBar: AppBar(title: const Text('Mês que Vem')),
+      appBar: AppBar(title: const Text('Mês que Vem'), actions: [
+        // contador como o de notificações: some quando não há insight
+        IconButton(
+          tooltip: 'Insights',
+          icon: Badge(
+            label: Text('$nInsights'),
+            isLabelVisible: nInsights > 0,
+            child: const Icon(Icons.lightbulb_outline),
+          ),
+          onPressed: () => Navigator.push(
+              context, MaterialPageRoute(builder: (_) => const InsightsPage())),
+        ),
+      ]),
       // a ação mais frequente do app, a um toque
       floatingActionButton: FloatingActionButton.extended(
         heroTag: null, // há outro botão flutuante na aba Compras
@@ -201,25 +215,6 @@ class HomePage extends StatelessWidget {
                   ),
                 ),
               ),
-              const SizedBox(height: 8),
-              for (final i in insights(
-                compras: store.compras,
-                hoje: hoje,
-                teto: teto,
-                limCompra: store.limites(TipoCategoria.compra),
-                limEvento: store.limites(TipoCategoria.evento),
-                gastadores: store.gastadores,
-                previsao: valor,
-              ))
-                Card(
-                  child: ListTile(
-                    dense: true,
-                    leading: i.alerta
-                        ? const Icon(Icons.warning_amber, color: corAcima)
-                        : const Icon(Icons.lightbulb_outline),
-                    title: Text(i.texto),
-                  ),
-                ),
               ..._secao(context, store, 'Por categoria', TipoCategoria.compra,
                   mes.porCategoria),
               ..._secao(context, store, 'Por evento', TipoCategoria.evento,
