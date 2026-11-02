@@ -4,6 +4,10 @@ import '../../data/compra.dart';
 import '../../data/gastador.dart';
 import 'resumo.dart';
 
+/// Quanto ainda dá para gastar por dia até o fim do mês, contando hoje.
+double porDiaAteOFim(double gasto, double teto, DateTime hoje) =>
+    (teto - gasto) / (diasNoMes(hoje.year, hoje.month) - hoje.day + 1);
+
 typedef Insight = ({String texto, bool alerta});
 
 /// Frases automáticas da tela principal, na ordem em que aparecem. Só entram
@@ -36,9 +40,8 @@ List<Insight> insights({
         alerta: true
       ));
     } else {
-      final restantes = dias - hoje.day + 1; // contando hoje
       r.add((
-        texto: 'Pode gastar ${fmtValor((teto - mes.total) / restantes)} '
+        texto: 'Pode gastar ${fmtValor(porDiaAteOFim(mes.total, teto, hoje))} '
             'por dia até o fim do mês',
         alerta: false,
       ));

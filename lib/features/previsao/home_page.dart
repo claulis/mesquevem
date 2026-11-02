@@ -101,29 +101,65 @@ class HomePage extends StatelessWidget {
               : DecorationImage(
                   image: FileImage(fundo), fit: BoxFit.cover, opacity: 0.3),
         ),
-        // rolável: com fonte grande o conteúdo pode não caber na tela
+        // rolável: com fonte grande o conteúdo pode não caber na tela;
         // embaixo, espaço para o botão "+ Compra" não cobrir a última linha
         child: ListView(
             padding: const EdgeInsets.fromLTRB(16, 16, 16, 88),
             children: [
-              const Text('Previsão para o mês que vem',
-                  textAlign: TextAlign.center),
-              const SizedBox(height: 8),
-              Text(fmtValor(valor),
-                  textAlign: TextAlign.center, style: tema.displayMedium),
-              const SizedBox(height: 8),
-              Text('Método: $metodo',
-                  textAlign: TextAlign.center, style: tema.bodySmall),
-              const Divider(height: 32),
-              const Text('Gasto neste mês', textAlign: TextAlign.center),
-              Text(fmtValor(mes.total),
-                  textAlign: TextAlign.center, style: tema.headlineMedium),
-              if (teto != null) ...[
-                Text('Teto: ${fmtValor(teto)}',
-                    textAlign: TextAlign.center,
-                    style: tema.titleMedium?.copyWith(color: corTeto)),
-                _barraTeto(context, mes.total, teto, hoje),
-              ],
+              // o que se acompanha no dia a dia vem primeiro: o mês atual
+              Card(
+                key: const Key('cartaoMes'),
+                child: Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Column(children: [
+                    Text('Gasto em ${meses[hoje.month - 1]}',
+                        textAlign: TextAlign.center),
+                    Text(fmtValor(mes.total),
+                        textAlign: TextAlign.center, style: tema.displaySmall),
+                    if (teto != null) ...[
+                      Text('Teto: ${fmtValor(teto)}',
+                          textAlign: TextAlign.center,
+                          style: tema.titleMedium?.copyWith(color: corTeto)),
+                      _barraTeto(context, mes.total, teto, hoje),
+                      const SizedBox(height: 8),
+                      if (mes.total > teto)
+                        Text('Teto estourado em ${fmtValor(mes.total - teto)}',
+                            textAlign: TextAlign.center,
+                            style: tema.titleSmall?.copyWith(color: corAcima))
+                      else
+                        Text(
+                            'Pode gastar '
+                            '${fmtValor(porDiaAteOFim(mes.total, teto, hoje))} '
+                            'por dia até o fim do mês',
+                            textAlign: TextAlign.center,
+                            style: tema.titleSmall),
+                    ],
+                  ]),
+                ),
+              ),
+              Card(
+                child: ListTile(
+                  title: const Text('Previsão para o mês que vem'),
+                  subtitle: Text(fmtValor(valor), style: tema.titleLarge),
+                  trailing: IconButton(
+                    icon: const Icon(Icons.info_outline),
+                    tooltip: 'Como é calculada',
+                    onPressed: () => showDialog<void>(
+                      context: context,
+                      builder: (ctx) => AlertDialog(
+                        title: const Text('Como é calculada'),
+                        content: Text('Método: $metodo.\n\nO método muda '
+                            'conforme o histórico de meses cresce.'),
+                        actions: [
+                          TextButton(
+                              onPressed: () => Navigator.pop(ctx),
+                              child: const Text('OK')),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              ),
               const SizedBox(height: 8),
               for (final i in insights(
                 compras: store.compras,

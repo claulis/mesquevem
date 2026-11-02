@@ -143,4 +143,22 @@ void main() {
         value: store, child: const MaterialApp(home: HomePage())));
     expect(find.textContaining('Teto'), findsNothing);
   });
+
+  testWidgets('home: cartão do mês mostra teto estourado; ⓘ explica a previsão',
+      (tester) async {
+    await tester.runAsync(() async {
+      await store.definirTeto(100);
+      await store.salvarCompra(Compra(DateTime.now(), 150));
+    });
+    await tester.pumpWidget(ChangeNotifierProvider.value(
+        value: store, child: const MaterialApp(home: HomePage())));
+    expect(
+        find.descendant(
+            of: find.byKey(const Key('cartaoMes')),
+            matching: find.text('Teto estourado em R\$ 50,00')),
+        findsOneWidget);
+    await tester.tap(find.byTooltip('Como é calculada'));
+    await tester.pumpAndSettle();
+    expect(find.textContaining('Método:'), findsOneWidget);
+  });
 }

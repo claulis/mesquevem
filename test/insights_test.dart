@@ -130,6 +130,10 @@ void main() {
     await montar();
     await tester.pump();
     expect(find.byKey(const Key('barraTeto')), findsOneWidget);
-    expect(find.textContaining('Pode gastar'), findsOneWidget);
+    expect(
+        find.descendant(
+            of: find.byKey(const Key('cartaoMes')),
+            matching: find.textContaining('Pode gastar')),
+        findsOneWidget);
   });
 }
