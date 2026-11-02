@@ -159,7 +159,8 @@ void main() {
     await tester.tap(find.text('Apagar')); // confirmação
     await tester.pumpAndSettle();
 
-    expect(find.text('Previsão para o mês que vem'), findsOneWidget);
+    // dados zerados: a home abre nas boas-vindas
+    expect(find.text(textoBoasVindas), findsOneWidget);
     expect(repo.salvamentos, 1);
   });
 
@@ -173,7 +174,7 @@ void main() {
     await tester.tap(find.text('Tentar novamente'));
     await tester.pumpAndSettle();
 
-    expect(find.text('Previsão para o mês que vem'), findsOneWidget);
+    expect(find.text(textoBoasVindas), findsOneWidget);
     expect(repo.salvamentos, 0);
   });
 
@@ -207,8 +208,32 @@ void main() {
     tester.platformDispatcher.platformBrightnessTestValue = Brightness.dark;
     addTearDown(tester.platformDispatcher.clearPlatformBrightnessTestValue);
     await abrir(tester, RepositorioMemoria());
-    final ctx = tester.element(find.text('Previsão para o mês que vem'));
+    final ctx = tester.element(find.text(textoBoasVindas));
     expect(Theme.of(ctx).brightness, Brightness.dark);
     expect(corDoLimite(ctx), corLimiteEscuro);
+  });
+
+  testWidgets('primeiro uso: boas-vindas levam ao teto e à primeira compra',
+      (tester) async {
+    final repo = RepositorioMemoria();
+    await abrir(tester, repo);
+    expect(find.text(textoBoasVindas), findsOneWidget);
+    expect(find.byKey(const Key('cartaoMes')), findsNothing,
+        reason: 'nada de R\$ 0,00 espalhado');
+
+    await tester.tap(find.text('2. Defina um teto de gastos (opcional)'));
+    await tester.pumpAndSettle();
+    await tester.enterText(find.byType(TextField), '500');
+    await tester.tap(find.text('Salvar'));
+    await tester.pumpAndSettle();
+    expect(find.text('2. Teto definido: R\$ 500,00'), findsOneWidget);
+
+    await tester.tap(find.text('1. Cadastre a primeira compra'));
+    await tester.pumpAndSettle();
+    await tester.enterText(find.widgetWithText(TextField, 'Valor (R\$)'), '20');
+    await tester.tap(find.text('Salvar'));
+    await tester.pumpAndSettle();
+    expect(find.text(textoBoasVindas), findsNothing);
+    expect(find.byKey(const Key('cartaoMes')), findsOneWidget);
   });
 }

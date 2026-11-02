@@ -5,6 +5,7 @@ import '../../core/format.dart';
 import '../../state/fundo.dart';
 import '../../state/store.dart';
 import '../compras/compras_page.dart';
+import '../config/config_page.dart';
 import 'insights.dart';
 import 'insights_page.dart';
 import 'previsao.dart';
@@ -23,6 +24,8 @@ Color corDoLimite(BuildContext context) =>
     Theme.of(context).brightness == Brightness.dark
         ? corLimiteEscuro
         : corLimite;
+
+const textoBoasVindas = 'Bem-vindo ao Mês que Vem!';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -150,6 +153,42 @@ class HomePage extends StatefulWidget {
 }
 
 class _HomePageState extends State<HomePage> {
+  /// Primeiro uso (nenhuma compra): em vez de vários R$ 0,00, os dois
+  /// passos para o app começar a funcionar.
+  Widget _boasVindas(BuildContext context, double? teto) {
+    final tema = Theme.of(context).textTheme;
+    return Card(
+      key: const Key('boasVindas'),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Text(textoBoasVindas, style: tema.titleLarge),
+          const SizedBox(height: 8),
+          const Text('Em dois passos o app começa a acompanhar e a prever '
+              'os gastos da família.'),
+          const SizedBox(height: 8),
+          ListTile(
+            contentPadding: EdgeInsets.zero,
+            leading: const Icon(Icons.add_shopping_cart),
+            title: const Text('1. Cadastre a primeira compra'),
+            trailing: const Icon(Icons.chevron_right),
+            onTap: () => ComprasPage.formulario(context),
+          ),
+          ListTile(
+            contentPadding: EdgeInsets.zero,
+            leading: Icon(teto == null ? Icons.savings : Icons.check_circle),
+            title: Text(teto == null
+                ? '2. Defina um teto de gastos (opcional)'
+                : '2. Teto definido: ${fmtValor(teto)}'),
+            subtitle: const Text('Quanto a família pode gastar por mês'),
+            trailing: teto == null ? const Icon(Icons.chevron_right) : null,
+            onTap: teto == null ? () => ConfigPage.definirTeto(context) : null,
+          ),
+        ]),
+      ),
+    );
+  }
+
   /// Mês exibido no cartão e nas categorias: 0 = atual, -1 = anterior...
   int _desloc = 0;
 
@@ -214,104 +253,110 @@ class _HomePageState extends State<HomePage> {
         // embaixo, espaço para o botão "+ Compra" não cobrir a última linha
         child: ListView(
             padding: const EdgeInsets.fromLTRB(16, 16, 16, 88),
-            children: [
-              // o que se acompanha no dia a dia vem primeiro: o mês atual;
-              // setas ou deslizar o cartão mostram os meses anteriores
-              GestureDetector(
-                onHorizontalDragEnd: (d) {
-                  final v = d.primaryVelocity ?? 0;
-                  if (v > 300 && podeVoltar) irPara(_desloc - 1);
-                  if (v < -300 && podeAvancar) irPara(_desloc + 1);
-                },
-                child: Card(
-                  key: const Key('cartaoMes'),
-                  child: Padding(
-                    padding: const EdgeInsets.all(16),
-                    child: Column(children: [
-                      Row(children: [
-                        IconButton(
-                          icon: const Icon(Icons.chevron_left),
-                          tooltip: 'Mês anterior',
-                          onPressed:
-                              podeVoltar ? () => irPara(_desloc - 1) : null,
+            children: store.compras.isEmpty
+                ? [_boasVindas(context, teto)]
+                : [
+                    // o que se acompanha no dia a dia vem primeiro: o mês atual;
+                    // setas ou deslizar o cartão mostram os meses anteriores
+                    GestureDetector(
+                      onHorizontalDragEnd: (d) {
+                        final v = d.primaryVelocity ?? 0;
+                        if (v > 300 && podeVoltar) irPara(_desloc - 1);
+                        if (v < -300 && podeAvancar) irPara(_desloc + 1);
+                      },
+                      child: Card(
+                        key: const Key('cartaoMes'),
+                        child: Padding(
+                          padding: const EdgeInsets.all(16),
+                          child: Column(children: [
+                            Row(children: [
+                              IconButton(
+                                icon: const Icon(Icons.chevron_left),
+                                tooltip: 'Mês anterior',
+                                onPressed: podeVoltar
+                                    ? () => irPara(_desloc - 1)
+                                    : null,
+                              ),
+                              Expanded(
+                                child: Text(
+                                    '${meses[visto.month - 1]} de ${visto.year}',
+                                    textAlign: TextAlign.center,
+                                    style: tema.titleMedium),
+                              ),
+                              IconButton(
+                                icon: const Icon(Icons.chevron_right),
+                                tooltip: 'Próximo mês',
+                                onPressed: podeAvancar
+                                    ? () => irPara(_desloc + 1)
+                                    : null,
+                              ),
+                            ]),
+                            Text(mesAtual ? 'Gasto até agora' : 'Gasto no mês',
+                                textAlign: TextAlign.center),
+                            Text(fmtValor(mes.total),
+                                textAlign: TextAlign.center,
+                                style: tema.displaySmall),
+                            if (teto != null) ...[
+                              Text('Teto: ${fmtValor(teto)}',
+                                  textAlign: TextAlign.center,
+                                  style: tema.titleMedium
+                                      ?.copyWith(color: corTeto)),
+                              HomePage._barraTeto(context, mes.total, teto,
+                                  mesAtual ? hoje : null),
+                              const SizedBox(height: 8),
+                              if (mes.total > teto)
+                                Text(
+                                    '${mesAtual ? 'Teto estourado' : 'Passou do teto'}'
+                                    ' em ${fmtValor(mes.total - teto)}',
+                                    textAlign: TextAlign.center,
+                                    style: tema.titleSmall
+                                        ?.copyWith(color: corAcima))
+                              else if (mesAtual)
+                                Text(
+                                    'Pode gastar '
+                                    '${fmtValor(porDiaAteOFim(mes.total, teto, hoje))} '
+                                    'por dia até o fim do mês',
+                                    textAlign: TextAlign.center,
+                                    style: tema.titleSmall)
+                              else
+                                Text(
+                                    'Ficou ${fmtValor(teto - mes.total)} abaixo do '
+                                    'teto',
+                                    textAlign: TextAlign.center,
+                                    style: tema.titleSmall),
+                            ],
+                          ]),
                         ),
-                        Expanded(
-                          child: Text(
-                              '${meses[visto.month - 1]} de ${visto.year}',
-                              textAlign: TextAlign.center,
-                              style: tema.titleMedium),
-                        ),
-                        IconButton(
-                          icon: const Icon(Icons.chevron_right),
-                          tooltip: 'Próximo mês',
-                          onPressed:
-                              podeAvancar ? () => irPara(_desloc + 1) : null,
-                        ),
-                      ]),
-                      Text(mesAtual ? 'Gasto até agora' : 'Gasto no mês',
-                          textAlign: TextAlign.center),
-                      Text(fmtValor(mes.total),
-                          textAlign: TextAlign.center,
-                          style: tema.displaySmall),
-                      if (teto != null) ...[
-                        Text('Teto: ${fmtValor(teto)}',
-                            textAlign: TextAlign.center,
-                            style: tema.titleMedium?.copyWith(color: corTeto)),
-                        HomePage._barraTeto(
-                            context, mes.total, teto, mesAtual ? hoje : null),
-                        const SizedBox(height: 8),
-                        if (mes.total > teto)
-                          Text(
-                              '${mesAtual ? 'Teto estourado' : 'Passou do teto'}'
-                              ' em ${fmtValor(mes.total - teto)}',
-                              textAlign: TextAlign.center,
-                              style: tema.titleSmall?.copyWith(color: corAcima))
-                        else if (mesAtual)
-                          Text(
-                              'Pode gastar '
-                              '${fmtValor(porDiaAteOFim(mes.total, teto, hoje))} '
-                              'por dia até o fim do mês',
-                              textAlign: TextAlign.center,
-                              style: tema.titleSmall)
-                        else
-                          Text(
-                              'Ficou ${fmtValor(teto - mes.total)} abaixo do '
-                              'teto',
-                              textAlign: TextAlign.center,
-                              style: tema.titleSmall),
-                      ],
-                    ]),
-                  ),
-                ),
-              ),
-              Card(
-                child: ListTile(
-                  title: const Text('Previsão para o mês que vem'),
-                  subtitle: Text(fmtValor(valor), style: tema.titleLarge),
-                  trailing: IconButton(
-                    icon: const Icon(Icons.info_outline),
-                    tooltip: 'Como é calculada',
-                    onPressed: () => showDialog<void>(
-                      context: context,
-                      builder: (ctx) => AlertDialog(
-                        title: const Text('Como é calculada'),
-                        content: Text('Método: $metodo.\n\nO método muda '
-                            'conforme o histórico de meses cresce.'),
-                        actions: [
-                          TextButton(
-                              onPressed: () => Navigator.pop(ctx),
-                              child: const Text('OK')),
-                        ],
                       ),
                     ),
-                  ),
-                ),
-              ),
-              ...HomePage._secao(context, store, 'Por categoria',
-                  TipoCategoria.compra, mes.porCategoria),
-              ...HomePage._secao(context, store, 'Por evento',
-                  TipoCategoria.evento, mes.porEvento),
-            ]),
+                    Card(
+                      child: ListTile(
+                        title: const Text('Previsão para o mês que vem'),
+                        subtitle: Text(fmtValor(valor), style: tema.titleLarge),
+                        trailing: IconButton(
+                          icon: const Icon(Icons.info_outline),
+                          tooltip: 'Como é calculada',
+                          onPressed: () => showDialog<void>(
+                            context: context,
+                            builder: (ctx) => AlertDialog(
+                              title: const Text('Como é calculada'),
+                              content: Text('Método: $metodo.\n\nO método muda '
+                                  'conforme o histórico de meses cresce.'),
+                              actions: [
+                                TextButton(
+                                    onPressed: () => Navigator.pop(ctx),
+                                    child: const Text('OK')),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                    ...HomePage._secao(context, store, 'Por categoria',
+                        TipoCategoria.compra, mes.porCategoria),
+                    ...HomePage._secao(context, store, 'Por evento',
+                        TipoCategoria.evento, mes.porEvento),
+                  ]),
       ),
     );
   }

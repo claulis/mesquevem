@@ -142,6 +142,8 @@ void main() {
   });
 
   testWidgets('home: sem teto cadastrado não mostra a linha', (tester) async {
+    // com uma compra, para sair das boas-vindas (que convidam a definir o teto)
+    await tester.runAsync(() => store.salvarCompra(Compra(DateTime.now(), 10)));
     await tester.pumpWidget(ChangeNotifierProvider.value(
         value: store, child: const MaterialApp(home: HomePage())));
     expect(find.textContaining('Teto'), findsNothing);

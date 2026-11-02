@@ -12,7 +12,8 @@ import 'fundo_page.dart';
 class ConfigPage extends StatelessWidget {
   const ConfigPage({super.key});
 
-  Future<void> _teto(BuildContext context) async {
+  /// Diálogo do teto de gastos. Usado também pelas boas-vindas da Home.
+  static Future<void> definirTeto(BuildContext context) async {
     final store = context.read<Store>();
     final atual = store.teto;
     final inicial = atual == null ? '' : fmtNumero(atual);
@@ -103,7 +104,7 @@ class ConfigPage extends StatelessWidget {
           leading: const Icon(Icons.savings),
           title: const Text('Teto de gastos'),
           subtitle: Text(teto == null ? 'Não cadastrado' : fmtValor(teto)),
-          onTap: () => _teto(context),
+          onTap: () => definirTeto(context),
         ),
         ListTile(
           leading: const Icon(Icons.system_update),
