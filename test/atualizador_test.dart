@@ -112,6 +112,7 @@ void main() {
         versao: '1.0.0-8',
         esperas: [espera],
         semDados: const Duration(seconds: 2),
+        exigirHttps: false, // servidor local de teste é http
       );
 
   File apk() => File('${pasta.path}/atualizacao/mesquevem-v1.0.0-9.apk');
@@ -176,6 +177,7 @@ void main() {
       atual: 8,
       esperas: const [Duration(milliseconds: 20)],
       semDados: const Duration(seconds: 2),
+      exigirHttps: false,
     );
     a.addListener(() {
       if (a.fase == Fase.semConexao) {
@@ -230,5 +232,46 @@ void main() {
     final instalada = Atualizador(pasta: () async => pasta, atual: 9);
     await instalada.retomarSalvo();
     expect(Directory('${pasta.path}/atualizacao').listSync(), isEmpty);
+  });
+
+  test('erro ao preparar a pasta não trava a tela (_rodando volta a false)',
+      () async {
+    // "pasta" que é um arquivo: criar atualizacao/ dentro dela falha
+    final arquivo = File('${pasta.path}/nao-e-pasta')..writeAsStringSync('x');
+    final a = Atualizador(
+      verificar: () async => Release(9, 'v1.0.0-9', srv.url, sha(dados)),
+      pasta: () async => Directory(arquivo.path),
+      atual: 8,
+      exigirHttps: false,
+    );
+    await a.atualizar();
+    expect(a.fase, Fase.erro);
+    expect(a.erro, contains('preparar o download'));
+    expect(a.rodando, isFalse, reason: 'senão os botões ficam desativados');
+    expect(srv.pedidos, isEmpty);
+  });
+
+  test('endereço sem https é recusado antes de baixar', () async {
+    final a = Atualizador(
+      verificar: () async => Release(9, 'v1.0.0-9', srv.url, sha(dados)),
+      pasta: () async => pasta,
+      atual: 8,
+    );
+    await a.atualizar();
+    expect(a.fase, Fase.erro);
+    expect(a.erro, contains('https'));
+    expect(srv.pedidos, isEmpty);
+    expect(a.rodando, isFalse);
+  });
+
+  test('ponto salvo com tag adulterada é ignorado na abertura', () async {
+    final dir = Directory('${pasta.path}/atualizacao')..createSync();
+    File('${dir.path}/mesquevem-x.json').writeAsStringSync(
+        '{"tag": "../../fora-9", "build": 9, "apk": "${srv.url}", '
+        '"sha256": null, "total": 0, "etag": null}');
+    final a = novo();
+    await a.retomarSalvo();
+    expect(a.fase, Fase.ocioso);
+    expect(srv.pedidos, isEmpty);
   });
 }

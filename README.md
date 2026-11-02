@@ -55,7 +55,7 @@ Tudo **offline** e no próprio celular. Sem cadastro, sem nuvem, sem ninguém ve
 
 ### O que é previsto
 
-O app soma o valor de todas as compras de cada mês, formando o **histórico mensal** da família. Entram nesse histórico apenas os **meses fechados**, do primeiro mês com alguma compra até o mês passado. Um mês sem compras nesse intervalo conta como R$ 0. O mês atual fica de fora, porque ainda está em andamento.
+O app soma o valor de todas as compras de cada mês, formando o **histórico mensal** da família. Entram nesse histórico apenas os **meses fechados**, do primeiro mês com alguma compra até o mês passado, limitados aos últimos 36 meses (o método mais exigente usa 24). Um mês sem compras nesse intervalo conta como R$ 0. O mês atual fica de fora, porque ainda está em andamento.
 
 A partir desse histórico, o app estima quanto será gasto no **mês que vem**, ou seja, no mês seguinte ao atual. O cálculo está na função `previsao`, em [`lib/features/previsao/previsao.dart`](lib/features/previsao/previsao.dart), que não depende do Flutter e é coberta por testes.
 

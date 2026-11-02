@@ -130,11 +130,20 @@ class Dados {
   }
 
   /// Ids repetidos (backup editado à mão): fica o primeiro.
+  ///
+  /// Id vazio ou ausente (backup editado à mão) ganha um id fixo pela
+  /// posição: vazio colidiria com "Todos" (o gastador '' das compras) e um id
+  /// aleatório mudaria a cada leitura.
   static List<Gastador> _gastadoresValidos(Object? lista) {
     final ids = <String>{};
     return [
-      for (final g in (lista ?? const []) as List)
-        if (Gastador.fromJson(g) case final x when ids.add(x.id)) x
+      for (final (i, g) in ((lista ?? const []) as List).indexed)
+        if (Gastador.fromJson({
+          ...g as Map<String, dynamic>,
+          if ((g['id'] as String? ?? '').isEmpty) 'id': 'gastador-$i',
+        })
+            case final x when ids.add(x.id))
+          x
     ];
   }
 

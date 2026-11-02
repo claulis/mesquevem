@@ -4,8 +4,12 @@ import '../../data/compra.dart';
 int _mes(DateTime d) => d.year * 12 + d.month;
 double _soma(Iterable<double> xs) => xs.fold(0.0, (a, b) => a + b);
 
+/// Histórico considerado na previsão, em meses fechados.
+const janelaMeses = 36;
+
 /// Previsão do mês seguinte. O algoritmo é escolhido pelo número de meses
-/// fechados de histórico (do primeiro mês com compra até o mês passado):
+/// fechados de histórico (do primeiro mês com compra até o mês passado,
+/// limitado aos últimos [janelaMeses]):
 ///   < 6  -> média móvel dos últimos 3 meses
 ///   6-23 -> suavização exponencial (alfa 0,5)
 ///   >=24 -> sazonal: mesmo mês do ano anterior x crescimento anual
@@ -16,7 +20,11 @@ double _soma(Iterable<double> xs) => xs.fold(0.0, (a, b) => a + b);
     totais[_mes(c.data)] = (totais[_mes(c.data)] ?? 0) + c.valor;
   }
   final atual = _mes(hoje);
-  final fechados = totais.keys.where((k) => k < atual);
+  // só os últimos [janelaMeses]: o sazonal usa 24 meses, então o resultado
+  // não muda, e uma data absurda (ano -270000, de um backup editado) não faz
+  // montar uma série de milhões de meses a cada vez que a Home é desenhada
+  final fechados =
+      totais.keys.where((k) => k < atual && k >= atual - janelaMeses);
   if (fechados.isEmpty) {
     return (totais[atual] ?? 0, 'total parcial do mês atual (sem histórico)');
   }

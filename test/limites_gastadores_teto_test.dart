@@ -62,6 +62,19 @@ void main() {
     expect(repo.salvamentos, n);
   });
 
+  test('gastador sem id ou com id vazio ganha id fixo (não colide com Todos)',
+      () {
+    String b() => '{"versao": 3, "compras": [], "catCompra": [], '
+        '"catEvento": [], "gastadores": ['
+        '{"id": "", "nome": "Ana", "aniversario": "2015-03-04T00:00:00.000", "sexo": "F"},'
+        '{"nome": "Bia", "aniversario": "2010-01-01T00:00:00.000", "sexo": "O"}]}';
+    final ids = Dados.deTexto(b()).gastadores.map((g) => g.id).toList();
+    expect(ids, ['gastador-0', 'gastador-1']);
+    expect(ids, isNot(contains('')), reason: "'' é o valor de \"Todos\"");
+    expect(Dados.deTexto(b()).gastadores.map((g) => g.id), ids,
+        reason: 'mesmo id a cada leitura');
+  });
+
   test('limite inválido ou de categoria inexistente no backup', () {
     String b(String lim) => '{"versao": 3, "compras": [], "catCompra": '
         '["Lazer"], "catEvento": [], "limCompra": $lim}';

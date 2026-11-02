@@ -40,6 +40,14 @@ void main() {
     expect(Release.deJson(respostaGitHub('v1.0.0-7')).sha256, isNull);
   });
 
+  test('tag que não serve como nome de arquivo é recusada', () {
+    for (final t in ['v1/2-15', '../x-9', '..', 'v1.0.0-9 ', '']) {
+      expect(() => Release.deJson(respostaGitHub(t)), throwsFormatException,
+          reason: t);
+    }
+    expect(tagValida('v1.0.0-14'), isTrue);
+  });
+
   test('release sem número na tag ou sem APK é recusada', () {
     expect(
         () => Release.deJson(respostaGitHub('v1.0.0')), throwsFormatException);

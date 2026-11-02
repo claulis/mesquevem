@@ -26,6 +26,10 @@ class Release {
   /// não tiver número de build na tag ou não tiver APK.
   factory Release.deJson(Map<String, dynamic> j) {
     final tag = j['tag_name'] as String;
+    // a tag vira nome de arquivo no download: nada de "/" ou ".."
+    if (!tagValida(tag)) {
+      throw FormatException('versão com nome inválido: $tag');
+    }
     final build = int.tryParse(tag.split('-').last);
     if (build == null) throw FormatException('versão sem número: $tag');
     final apk = (j['assets'] as List)
@@ -43,6 +47,10 @@ class Release {
             : null);
   }
 }
+
+/// Só letras, números, "_", "." e "-" ("v1.0.0-14"), e não só pontos.
+bool tagValida(String tag) =>
+    RegExp(r'^[\w.\-]+$').hasMatch(tag) && !RegExp(r'^\.+$').hasMatch(tag);
 
 bool temNova(Release r, {int atual = buildAtual}) =>
     atual > 0 && r.build > atual;

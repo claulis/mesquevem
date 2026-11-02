@@ -55,6 +55,10 @@ class Atualizador extends ChangeNotifier {
   /// Sem nenhum byte por este tempo, a conexão conta como caída.
   final Duration semDados;
 
+  /// Recusa endereço sem https (inclusive em redirect), para ninguém no
+  /// caminho da rede trocar o APK. Só os testes, com servidor local, desligam.
+  final bool exigirHttps;
+
   Atualizador({
     Future<Release> Function() verificar = ultimaRelease,
     Future<Directory> Function() pasta = getApplicationSupportDirectory,
@@ -68,6 +72,7 @@ class Atualizador extends ChangeNotifier {
       Duration(seconds: 30),
     ],
     this.semDados = const Duration(seconds: 20),
+    this.exigirHttps = true,
   })  : _verificar = verificar,
         _pasta = pasta,
         _instalar = instalar;
@@ -140,7 +145,8 @@ class Atualizador extends ChangeNotifier {
         if (!f.path.endsWith('.json')) continue;
         final m = jsonDecode(await f.readAsString()) as Map<String, dynamic>;
         final r = Release(m['build'], m['tag'], m['apk'], m['sha256']);
-        if (!temNovaVersao(r)) continue;
+        // a tag vira nome de arquivo: ponto salvo adulterado é ignorado
+        if (!tagValida(r.tag) || !temNovaVersao(r)) continue;
         release = r;
         final pronto = File(_caminho(dir, r, '.apk'));
         if (await pronto.exists()) {
@@ -191,15 +197,21 @@ class Atualizador extends ChangeNotifier {
     _rodando = true;
     _cancelado = false;
     aviso = null;
-    final dir = await _dir();
-    final parte = File(_caminho(dir, r, '.apk.parte'));
-    final meta = File(_caminho(dir, r, '.json'));
-    // ponto salvo de outra versão não serve mais
-    for (final f in dir.listSync()) {
-      if (!f.path.contains('mesquevem-${r.tag}.')) await f.delete();
-    }
+    var arquivos = <File>[]; // parte e meta, para o cancelar apagar
     var tentativa = 0, corrompidos = 0;
+    // tudo dentro do try: se preparar a pasta falhar (disco cheio, sem
+    // permissão), o finally ainda libera _rodando e a tela não fica travada
     try {
+      final dir = await _dir();
+      final parte = File(_caminho(dir, r, '.apk.parte'));
+      final meta = File(_caminho(dir, r, '.json'));
+      arquivos = [parte, meta];
+      // ponto salvo de outra versão não serve mais
+      for (final f in dir.listSync()) {
+        if (!f.path.contains('mesquevem-${r.tag}.')) {
+          await f.delete(recursive: true);
+        }
+      }
       while (!_cancelado) {
         try {
           final m = await _baixarTrecho(r, parte, meta, () => tentativa = 0);
@@ -236,11 +248,14 @@ class Atualizador extends ChangeNotifier {
           return _mudar(Fase.erro, erro: mensagem(e));
         }
       }
+    } on FileSystemException catch (e) {
+      _mudar(Fase.erro,
+          erro: 'Não foi possível preparar o download (${e.message}).');
     } finally {
       _rodando = false;
       _cliente = null;
       if (_cancelado) {
-        await _apagar([parte, meta]);
+        await _apagar(arquivos);
         recebidos = total = 0;
         _mudar(Fase.ocioso);
       }
@@ -291,6 +306,9 @@ class Atualizador extends ChangeNotifier {
       var url = Uri.parse(r.apk);
       HttpClientResponse resp;
       for (var i = 0;; i++) {
+        if (exigirHttps && url.scheme != 'https') {
+          throw const ErroDoApp('download recusado: o endereço não usa https');
+        }
         final req = await c.getUrl(url);
         req.followRedirects = false;
         if (inicio > 0) {
@@ -300,7 +318,11 @@ class Atualizador extends ChangeNotifier {
         resp = await req.close().timeout(semDados);
         if (resp.isRedirect && i < 5) {
           await resp.drain<void>();
-          url = url.resolve(resp.headers.value('location')!);
+          final destino = resp.headers.value('location');
+          if (destino == null) {
+            throw const ErroDoApp('o servidor redirecionou sem destino');
+          }
+          url = url.resolve(destino);
           continue;
         }
         break;

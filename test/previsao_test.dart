@@ -40,4 +40,31 @@ void main() {
     expect(v, 400); // nov/2025 (200) x crescimento anual (2,0)
     expect(m, contains('sazonal'));
   });
+
+  test(
+      'data absurda de um backup não muda a previsão nem monta milhões de meses',
+      () {
+    final normais = [
+      Compra(DateTime(2026, 7, 5), 100),
+      Compra(DateTime(2026, 8, 5), 200),
+      Compra(DateTime(2026, 9, 5), 300),
+    ];
+    final comLixo = [...normais, Compra(DateTime(-270000), 999)];
+    expect(previsao(comLixo, hoje), previsao(normais, hoje));
+    expect(previsao(comLixo, hoje).$2, contains('média móvel'));
+  });
+
+  test('histórico além da janela não altera o sazonal', () {
+    // 40 meses: a janela de 36 cobre os 24 que o sazonal usa
+    final lista = [
+      for (var i = 0; i < 40; i++) Compra(DateTime(2023, 6 + i, 15), 100.0 + i)
+    ];
+    final (v, m) = previsao(lista, hoje);
+    expect(m, contains('sazonal'));
+    // nov/2025 = i 29 (129) x (soma dos últimos 12 / soma dos 12 anteriores)
+    final ultimos = [for (var i = 28; i < 40; i++) 100.0 + i];
+    final anteriores = [for (var i = 16; i < 28; i++) 100.0 + i];
+    double soma(List<double> l) => l.fold(0.0, (a, b) => a + b);
+    expect(v, closeTo(129 * soma(ultimos) / soma(anteriores), 1e-9));
+  });
 }
