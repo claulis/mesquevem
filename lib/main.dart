@@ -30,7 +30,12 @@ Future<void> _avisosDeVersao() async {
   try {
     await iniciarNotificacoes(aoTocar: _abrirAtualizar);
     final abertura = await notificacoes.getNotificationAppLaunchDetails();
-    if (abertura?.didNotificationLaunchApp ?? false) _abrirAtualizar();
+    if (abertura?.didNotificationLaunchApp ?? false) {
+      // app aberto pelo toque: espera a primeira tela existir para o
+      // Navigator não ser null e o toque não se perder
+      await WidgetsBinding.instance.endOfFrame;
+      _abrirAtualizar();
+    }
     await pedirPermissaoDeNotificar();
     await agendarVerificacao();
     final r = await ultimaRelease();
