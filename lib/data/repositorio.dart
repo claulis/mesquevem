@@ -3,6 +3,9 @@ import '../core/erros.dart';
 import 'compra.dart';
 import 'gastador.dart';
 
+/// Maior valor aceito num backup importado (ver [Dados.deTexto]).
+const valorMaximoBackup = 1e300;
+
 /// Versão do formato JSON (armazenamento interno e arquivo de backup).
 /// Mudou o formato? Suba este número e acrescente um `if (v < N)` em [Dados._migrar].
 const versaoAtual = 3;
@@ -99,7 +102,23 @@ class Dados {
     if (j is! Map<String, dynamic>) {
       throw const FormatException('não é um backup do app Mês que Vem');
     }
-    return Dados.fromJson(j);
+    final d = Dados.fromJson(j);
+    // backup é entrada de fora: valor absurdo faria as somas estourarem
+    // ("Infinity"). O limite é alto de propósito: versões antigas deixavam
+    // digitar valores enormes (5e25) e esses backups continuam importáveis.
+    // Com todos os valores <= 1e300, nenhuma soma chega ao máximo do double
+    // (~1,8e308). Os dados já salvos no aparelho não passam por aqui.
+    for (final v in [
+      ...d.compras.map((c) => c.valor),
+      ...d.limCompra.values,
+      ...d.limEvento.values,
+      if (d.teto != null) d.teto!,
+    ]) {
+      if (v.abs() > valorMaximoBackup) {
+        throw FormatException('valor acima do permitido: $v');
+      }
+    }
+    return d;
   }
 
   /// O Store supõe nomes não vazios e únicos; backup editado à mão pode ter

@@ -282,4 +282,14 @@ void main() {
     expect(lidos, lessThan(20), reason: 'parou logo depois do limite');
     expect(await lerComLimite(Stream.value([1, 2, 3]), limite: 10), [1, 2, 3]);
   });
+
+  test('backup com valor absurdo (somas virariam Infinity) é recusado', () {
+    String b(String valor) => '{"versao": 3, "compras": [{"id": "a", '
+        '"data": "2026-09-01T00:00:00.000", "valor": $valor}], '
+        '"catCompra": [], "catEvento": []}';
+    expect(() => Dados.deTexto(b('1e308')), throwsFormatException);
+    expect(() => Dados.deTexto(b('-1e301')), throwsFormatException);
+    // valores enormes de versões antigas continuam importáveis
+    expect(Dados.deTexto(b('5e25')).compras.single.valor, 5e25);
+  });
 }
