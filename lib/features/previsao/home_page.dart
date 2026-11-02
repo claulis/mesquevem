@@ -217,7 +217,7 @@ class _HomePageState extends State<HomePage> {
     final fundo = context.watch<Fundo?>();
     final imagem = fundo?.arquivo;
     final tema = Theme.of(context).textTheme;
-    final nInsights = insightsDe(store, hoje).length;
+    final nInsights = insightsDe(store, hoje, valorPrevisto: valor).length;
     return Scaffold(
       appBar: AppBar(title: const Text('Mês que Vem'), actions: [
         // contador como o de notificações: some quando não há insight

@@ -6,7 +6,9 @@ import 'insights.dart';
 import 'previsao.dart';
 
 /// Os insights de hoje para os dados do [store], alertas primeiro.
-List<Insight> insightsDe(Store store, DateTime hoje) => [
+/// [valorPrevisto]: a previsão já calculada (a Home tem), para não refazer.
+List<Insight> insightsDe(Store store, DateTime hoje, {double? valorPrevisto}) =>
+    [
       ...insights(
         compras: store.compras,
         hoje: hoje,
@@ -14,7 +16,7 @@ List<Insight> insightsDe(Store store, DateTime hoje) => [
         limCompra: store.limites(TipoCategoria.compra),
         limEvento: store.limites(TipoCategoria.evento),
         gastadores: store.gastadores,
-        previsao: previsao(store.compras, hoje).$1,
+        previsao: valorPrevisto ?? previsao(store.compras, hoje).$1,
       ),
     ]..sort((a, b) => (b.alerta ? 1 : 0) - (a.alerta ? 1 : 0));
 

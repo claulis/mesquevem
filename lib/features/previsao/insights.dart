@@ -92,10 +92,15 @@ List<Insight> insights({
   }
 
   // categoria de compra que mais passou da média dos 3 meses fechados
-  final passados = [
-    for (var i = 1; i <= 3; i++)
-      gastoDoMes(compras, DateTime(hoje.year, hoje.month - i)).porCategoria
-  ];
+  // os 3 meses numa passada só pelas compras (antes: uma por mês)
+  final passados = [for (var i = 0; i < 3; i++) <String, double>{}];
+  final mesHoje = hoje.year * 12 + hoje.month;
+  for (final c in compras) {
+    final k = mesHoje - (c.data.year * 12 + c.data.month) - 1;
+    if (k >= 0 && k < 3) {
+      passados[k][c.categoria] = (passados[k][c.categoria] ?? 0) + c.valor;
+    }
+  }
   String? maisCresceu;
   var maiorExcesso = 0.0, mediaDela = 0.0;
   for (final MapEntry(key: nome, value: gasto) in mes.porCategoria.entries) {
