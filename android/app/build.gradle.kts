@@ -53,6 +53,22 @@ android {
     }
 }
 
+// Release local sem a chave oficial sai com a de debug: serve para testar,
+// mas não instala por cima do app oficial. Avisa para não ser distribuído.
+gradle.taskGraph.whenReady {
+    val release = allTasks.any {
+        it.name.endsWith("Release") &&
+            (it.name.startsWith("assemble") || it.name.startsWith("bundle"))
+    }
+    if (release && System.getenv("KEYSTORE_PATH") == null) {
+        logger.warn(
+            "\nATENÇÃO: build release SEM a chave oficial (KEYSTORE_PATH vazio).\n" +
+                "Este APK usa a chave de debug e NÃO atualiza o app instalado. " +
+                "Não distribua.\n"
+        )
+    }
+}
+
 flutter {
     source = "../.."
 }
