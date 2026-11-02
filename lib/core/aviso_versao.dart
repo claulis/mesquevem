@@ -30,6 +30,9 @@ Future<void> verificarEAvisar() async {
   final r = await ultimaRelease();
   if (!temNova(r)) return;
   final p = await SharedPreferences.getInstance();
+  // roda em segundo plano, num isolate com cache próprio: relê o disco para
+  // não avisar de novo uma versão já avisada (nem deixar de avisar)
+  await p.reload();
   if ((p.getInt(_jaAvisado) ?? 0) >= r.build) return;
   await notificacoes.show(
     id: 1,
