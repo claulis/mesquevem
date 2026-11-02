@@ -126,7 +126,8 @@ class HomePage extends StatefulWidget {
                       color: gasto > teto ? corAcima : corTeto,
                       borderRadius: BorderRadius.circular(7))),
             ),
-            if (ideal != null)
+            // largura < 2: o clamp abaixo teria limite superior menor que o inferior
+            if (ideal != null && c.maxWidth >= 2)
               Positioned(
                 left: (c.maxWidth * ideal - 1).clamp(0.0, c.maxWidth - 2),
                 top: 0,
