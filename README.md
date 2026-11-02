@@ -16,7 +16,7 @@
 [![SharedPreferences](https://img.shields.io/badge/dados-SharedPreferences-00897B)](https://pub.dev/packages/shared_preferences)
 [![GitHub Actions](https://img.shields.io/badge/CI-GitHub%20Actions-2088FF?logo=githubactions&logoColor=white)](https://github.com/claulis/mesquevem/actions)
 [![Release](https://img.shields.io/github/v/release/claulis/mesquevem?label=vers%C3%A3o&color=009C3B)](https://github.com/claulis/mesquevem/releases/latest)
-[![Testes](https://img.shields.io/badge/testes-120%20passando-brightgreen)](test)
+[![Testes](https://img.shields.io/badge/testes-138%20passando-brightgreen)](test)
 [![Feito com](https://img.shields.io/badge/feito%20com-%E2%98%95%20e%20boletos-FFDF00)](#)
 
 </div>
@@ -39,15 +39,19 @@ Tudo **offline** e no próprio celular. Sem cadastro, sem nuvem, sem ninguém ve
 
 | | Funcionalidade | O que faz |
 |---|---|---|
-| 🛒 | **Cadastro de compras** | Valor, data, descrição, categoria, evento e *gastador* |
-| 🏷️ | **Categorias com limite** | Limite mensal por categoria. Na tela principal aparece em azul claro e fica 🟥 vermelho quando estoura |
+| 🏠 | **Tela principal** | Cartão do mês no topo: gasto até agora, teto, barra e quanto ainda dá para gastar por dia. Setas (ou deslizar o cartão) mostram os meses anteriores. A previsão fica num cartão menor, com o método no ⓘ |
+| 🧭 | **Navegação** | Barra de baixo com **Início · Compras · Config**, com a aba atual destacada. Categorias e Gastadores ficam dentro de Config |
+| 🛒 | **Cadastro de compras** | Valor, data, descrição, categoria, evento e *gastador*. O botão **+ Compra** da tela principal abre o formulário direto |
+| 🏷️ | **Categorias com limite** | Limite mensal por categoria, com barra de progresso na tela principal: azul claro e, quando estoura, 🟥 vermelho com o aviso ⚠ "acima do limite". A lista vem da maior para a menor; as sem gasto ficam recolhidas |
 | 🎉 | **Eventos** | Natal, aniversário, viagem… para saber quanto custou aquela festa "simples" |
 | 👨‍👩‍👧 | **Gastadores** | O núcleo familiar (nome, aniversário, sexo). Cada compra pode ser de alguém ou de **Todos** |
 | 🧢 | **Teto de gastos** | Quanto a família pode gastar no mês, com barra de progresso e a marca do ritmo ideal para hoje |
-| 💡 | **Insights** | Ritmo do mês, quanto ainda pode gastar por dia, comparação com o mês passado, categorias perto do limite, aniversários chegando |
+| 💡 | **Insights** | Botão 💡 na tela principal com o número de insights no canto, como um contador de notificações. Abre a lista: ritmo do mês, quanto ainda pode gastar por dia, comparação com o mês passado, categorias perto do limite, aniversários chegando (alertas primeiro) |
 | 🔮 | **Previsão** | Três métodos estatísticos que se revezam conforme o histórico cresce (veja a seção Previsão de gastos) |
 | 💾 | **Backup e compartilhamento** | Exporta e importa um JSON, ou manda direto pelo WhatsApp, e-mail ou Drive |
-| 🖼️ | **Fundo personalizado** | *"Coloque uma imagem de quem, ou que, te inspira a gastar menos ou de quem, ou que, te faz gastar mais 😄"* |
+| 🖼️ | **Fundo personalizado** | *"Coloque uma imagem de quem, ou que, te inspira a gastar menos ou de quem, ou que, te faz gastar mais 😄"*. A opacidade da imagem é ajustável de 5% a 100%, com prévia |
+| 🌙 | **Tema escuro** | Segue o modo claro/escuro do celular |
+| 👋 | **Primeiro uso** | Sem nenhuma compra, a tela principal mostra boas-vindas com os dois passos para começar: cadastrar a primeira compra e definir o teto |
 | 🔄 | **Atualizar pelo app** | Config → Atualizar: confere a última versão no GitHub, baixa e abre o instalador. O download **continua de onde parou** se a internet cair, se você sair da tela ou até se fechar o app, e o SHA-256 é conferido antes de instalar |
 | 🔔 | **Aviso de versão nova** | A cada ~12h o app dá uma espiada no GitHub e notifica se saiu versão nova |
 
@@ -92,9 +96,9 @@ Se a soma dos 12 meses anteriores for zero, o crescimento é 1, isto é, sem cor
 
 Referência: R. J. Hyndman e G. Athanasopoulos, *Forecasting: Principles and Practice*, 3.ª ed., OTexts, 2021 ([otexts.com/fpp3](https://otexts.com/fpp3/)).
 
-### Indicadores da tela principal (insights)
+### Indicadores (insights)
 
-Calculados em [`lib/features/previsao/insights.dart`](lib/features/previsao/insights.dart). Cada indicador só aparece quando se aplica; os que dependem do teto, por exemplo, só aparecem com o teto cadastrado.
+Aparecem na tela **Insights**, aberta pelo botão 💡 da tela principal, que mostra quantos há. Calculados em [`lib/features/previsao/insights.dart`](lib/features/previsao/insights.dart). Cada indicador só aparece quando se aplica; os que dependem do teto, por exemplo, só aparecem com o teto cadastrado.
 
 | Indicador | Como é calculado |
 |---|---|
@@ -135,9 +139,10 @@ O aplicativo adota uma **arquitetura em camadas com fluxo de dados unidirecional
 ```mermaid
 flowchart TD
     subgraph UI["features/ (apresentação)"]
-        H[Home: previsão, teto, insights]
-        C[Compras · Categorias · Gastadores]
-        CFG[Config: backup, fundo, teto, atualizar]
+        H[Início: mês atual, previsão, categorias]
+        I[Insights]
+        C[Compras]
+        CFG[Config: categorias, gastadores, backup, fundo, teto, atualizar]
     end
     subgraph Estado["state/"]
         S[Store<br/>regras de negócio e fila de operações]
@@ -202,11 +207,11 @@ lib/
 │   └── repositorio_prefs.dart
 ├── state/                 # Store (regras), Fundo e Atualizador
 └── features/              # uma pasta por tela
-    ├── previsao/          #   home, previsão, resumo, insights
+    ├── previsao/          #   home, previsão, resumo, insights (regras e tela)
     ├── compras/ · categorias/ · gastadores/
     ├── backup/ · config/  #   backup, fundo, teto, atualizar
-    └── inicio/            #   carga inicial e tela de erro
-test/                      # 120 testes (unidade e widget)
+    └── inicio/            #   carga inicial, tela de erro e abas
+test/                      # 138 testes (unidade e widget)
 tool/make_icon.py          # gera o ícone (calendário nas cores do Brasil)
 ```
 
@@ -222,7 +227,7 @@ tool/make_icon.py          # gera o ícone (calendário nas cores do Brasil)
 
 ```bash
 flutter pub get
-flutter test        # 120 testes
+flutter test        # 138 testes
 flutter run         # com um celular ou emulador Android conectado
 ```
 
