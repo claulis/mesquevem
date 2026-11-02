@@ -25,6 +25,16 @@ class Release {
   /// Lê a resposta de /releases/latest. Lança [FormatException] se a release
   /// não tiver número de build na tag ou não tiver APK.
   factory Release.deJson(Map<String, dynamic> j) {
+    try {
+      return _ler(j);
+    } on TypeError {
+      // campo ausente ou de outro tipo: mensagem para gente, não
+      // "type 'Null' is not a subtype of type 'String'"
+      throw const FormatException('resposta inesperada do GitHub');
+    }
+  }
+
+  static Release _ler(Map<String, dynamic> j) {
     final tag = j['tag_name'] as String;
     // a tag vira nome de arquivo no download: nada de "/" ou ".."
     if (!tagValida(tag)) {

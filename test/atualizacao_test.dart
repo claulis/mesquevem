@@ -47,6 +47,25 @@ void main() {
     expect(Release.deJson(respostaGitHub('v1.0.0-7')).sha256, isNull);
   });
 
+  test('resposta fora do formato vira mensagem legível, não TypeError', () {
+    for (final j in <Map<String, dynamic>>[
+      {'assets': []}, // sem tag_name
+      {'tag_name': 'v1.0.0-9', 'assets': 'x'},
+      {
+        'tag_name': 'v1.0.0-9',
+        'assets': [
+          {'name': 5}
+        ]
+      },
+    ]) {
+      expect(
+          () => Release.deJson(j),
+          throwsA(isA<FormatException>().having(
+              (e) => e.message, 'message', 'resposta inesperada do GitHub')),
+          reason: '$j');
+    }
+  });
+
   test('tag que não serve como nome de arquivo é recusada', () {
     for (final t in ['v1/2-15', '../x-9', '..', 'v1.0.0-9 ', '']) {
       expect(() => Release.deJson(respostaGitHub(t)), throwsFormatException,
