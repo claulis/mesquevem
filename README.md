@@ -16,7 +16,7 @@
 [![SharedPreferences](https://img.shields.io/badge/dados-SharedPreferences-00897B)](https://pub.dev/packages/shared_preferences)
 [![GitHub Actions](https://img.shields.io/badge/CI-GitHub%20Actions-2088FF?logo=githubactions&logoColor=white)](https://github.com/claulis/mesquevem/actions)
 [![Release](https://img.shields.io/github/v/release/claulis/mesquevem?label=vers%C3%A3o&color=009C3B)](https://github.com/claulis/mesquevem/releases/latest)
-[![Testes](https://img.shields.io/badge/testes-138%20passando-brightgreen)](test)
+[![Testes](https://img.shields.io/badge/testes-151%20passando-brightgreen)](test)
 [![Feito com](https://img.shields.io/badge/feito%20com-%E2%98%95%20e%20boletos-FFDF00)](#)
 
 </div>
@@ -105,7 +105,7 @@ Aparecem na tela **Insights**, aberta pelo botão 💡 da tela principal, que mo
 | Ritmo do mês | `gasto até hoje ÷ dia de hoje × dias do mês`. Supõe que o gasto continue no mesmo ritmo até o fim do mês |
 | Quanto ainda pode gastar por dia | `(teto − gasto até hoje) ÷ dias que faltam`, contando hoje. Se o teto já foi ultrapassado, mostra o valor excedido |
 | Comparação com o mês passado | Compara o gasto de hoje com o do mês passado **no mesmo período** (do dia 1 até o mesmo dia), em percentual |
-| Perto do limite | Avisa quando uma categoria já usou entre 80% e 100% do limite. Acima de 100%, a categoria aparece em vermelho na lista |
+| Limite da categoria | Avisa quando uma categoria já usou entre 80% e 100% do limite e quando passou dele ("passou do limite em R$ X"); na lista, a categoria estourada aparece em vermelho |
 | Categoria que mais cresceu | Compara o gasto de cada categoria neste mês com a média dela nos 3 meses anteriores e mostra a que mais ultrapassou essa média |
 | Previsão acima do teto | Avisa quando a previsão do mês que vem já é maior que o teto |
 | Aniversários | Lista os gastadores que fazem aniversário no mês que vem |
@@ -211,7 +211,7 @@ lib/
     ├── compras/ · categorias/ · gastadores/
     ├── backup/ · config/  #   backup, fundo, teto, atualizar
     └── inicio/            #   carga inicial, tela de erro e abas
-test/                      # 138 testes (unidade e widget)
+test/                      # 151 testes (unidade e widget)
 tool/make_icon.py          # gera o ícone (calendário nas cores do Brasil)
 ```
 
@@ -227,7 +227,7 @@ tool/make_icon.py          # gera o ícone (calendário nas cores do Brasil)
 
 ```bash
 flutter pub get
-flutter test        # 138 testes
+flutter test        # 151 testes
 flutter run         # com um celular ou emulador Android conectado
 ```
 
