@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import '../../core/format.dart';
 import '../../state/fundo.dart';
 import '../../state/store.dart';
+import '../compras/compras_page.dart';
 import '../features.dart';
 import 'insights.dart';
 import 'previsao.dart';
@@ -86,6 +87,12 @@ class HomePage extends StatelessWidget {
     final tema = Theme.of(context).textTheme;
     return Scaffold(
       appBar: AppBar(title: const Text('Mês que Vem')),
+      // a ação mais frequente do app, a um toque
+      floatingActionButton: FloatingActionButton.extended(
+        icon: const Icon(Icons.add),
+        label: const Text('Compra'),
+        onPressed: () => ComprasPage.formulario(context),
+      ),
       body: DecoratedBox(
         decoration: BoxDecoration(
           image: fundo == null
@@ -95,54 +102,57 @@ class HomePage extends StatelessWidget {
                   image: FileImage(fundo), fit: BoxFit.cover, opacity: 0.3),
         ),
         // rolável: com fonte grande o conteúdo pode não caber na tela
-        child: ListView(padding: const EdgeInsets.all(16), children: [
-          const Text('Previsão para o mês que vem',
-              textAlign: TextAlign.center),
-          const SizedBox(height: 8),
-          Text(fmtValor(valor),
-              textAlign: TextAlign.center, style: tema.displayMedium),
-          const SizedBox(height: 8),
-          Text('Método: $metodo',
-              textAlign: TextAlign.center, style: tema.bodySmall),
-          const Divider(height: 32),
-          const Text('Gasto neste mês', textAlign: TextAlign.center),
-          Text(fmtValor(mes.total),
-              textAlign: TextAlign.center, style: tema.headlineMedium),
-          if (teto != null) ...[
-            Text('Teto: ${fmtValor(teto)}',
-                textAlign: TextAlign.center,
-                style: tema.titleMedium?.copyWith(color: corTeto)),
-            _barraTeto(context, mes.total, teto, hoje),
-          ],
-          const SizedBox(height: 8),
-          for (final i in insights(
-            compras: store.compras,
-            hoje: hoje,
-            teto: teto,
-            limCompra: store.limites(TipoCategoria.compra),
-            limEvento: store.limites(TipoCategoria.evento),
-            gastadores: store.gastadores,
-            previsao: valor,
-          ))
-            Card(
-              child: ListTile(
-                dense: true,
-                leading: i.alerta
-                    ? const Icon(Icons.warning_amber, color: corAcima)
-                    : const Icon(Icons.lightbulb_outline),
-                title: Text(i.texto),
-              ),
-            ),
-          for (final (titulo, tipo, gastos) in [
-            ('Por categoria', TipoCategoria.compra, mes.porCategoria),
-            ('Por evento', TipoCategoria.evento, mes.porEvento),
-          ]) ...[
-            const SizedBox(height: 16),
-            Text(titulo, style: tema.titleSmall),
-            for (final nome in store.categorias(tipo))
-              _categoria(nome, gastos[nome] ?? 0, store.limite(tipo, nome)),
-          ],
-        ]),
+        // embaixo, espaço para o botão "+ Compra" não cobrir a última linha
+        child: ListView(
+            padding: const EdgeInsets.fromLTRB(16, 16, 16, 88),
+            children: [
+              const Text('Previsão para o mês que vem',
+                  textAlign: TextAlign.center),
+              const SizedBox(height: 8),
+              Text(fmtValor(valor),
+                  textAlign: TextAlign.center, style: tema.displayMedium),
+              const SizedBox(height: 8),
+              Text('Método: $metodo',
+                  textAlign: TextAlign.center, style: tema.bodySmall),
+              const Divider(height: 32),
+              const Text('Gasto neste mês', textAlign: TextAlign.center),
+              Text(fmtValor(mes.total),
+                  textAlign: TextAlign.center, style: tema.headlineMedium),
+              if (teto != null) ...[
+                Text('Teto: ${fmtValor(teto)}',
+                    textAlign: TextAlign.center,
+                    style: tema.titleMedium?.copyWith(color: corTeto)),
+                _barraTeto(context, mes.total, teto, hoje),
+              ],
+              const SizedBox(height: 8),
+              for (final i in insights(
+                compras: store.compras,
+                hoje: hoje,
+                teto: teto,
+                limCompra: store.limites(TipoCategoria.compra),
+                limEvento: store.limites(TipoCategoria.evento),
+                gastadores: store.gastadores,
+                previsao: valor,
+              ))
+                Card(
+                  child: ListTile(
+                    dense: true,
+                    leading: i.alerta
+                        ? const Icon(Icons.warning_amber, color: corAcima)
+                        : const Icon(Icons.lightbulb_outline),
+                    title: Text(i.texto),
+                  ),
+                ),
+              for (final (titulo, tipo, gastos) in [
+                ('Por categoria', TipoCategoria.compra, mes.porCategoria),
+                ('Por evento', TipoCategoria.evento, mes.porEvento),
+              ]) ...[
+                const SizedBox(height: 16),
+                Text(titulo, style: tema.titleSmall),
+                for (final nome in store.categorias(tipo))
+                  _categoria(nome, gastos[nome] ?? 0, store.limite(tipo, nome)),
+              ],
+            ]),
       ),
       // altura pelo conteúdo (não fixa), para aguentar fonte grande do sistema
       bottomNavigationBar: Material(

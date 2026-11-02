@@ -50,6 +50,20 @@ void main() {
     }
   });
 
+  testWidgets('botão + Compra da tela principal cadastra direto',
+      (tester) async {
+    final repo = RepositorioMemoria();
+    await abrir(tester, repo);
+    await tester.tap(find.widgetWithText(FloatingActionButton, 'Compra'));
+    await tester.pumpAndSettle();
+    expect(find.text('Nova compra'), findsOneWidget);
+    await tester.enterText(
+        find.widgetWithText(TextField, 'Valor (R\$)'), '12,50');
+    await tester.tap(find.text('Salvar'));
+    await tester.pumpAndSettle();
+    expect(repo.dados.compras.single.valor, 12.5);
+  });
+
   testWidgets('excluir compra pela tela remove do store', (tester) async {
     await abrir(
         tester,

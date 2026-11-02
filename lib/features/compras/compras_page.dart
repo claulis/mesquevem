@@ -9,7 +9,7 @@ import '../../state/store.dart';
 class ComprasPage extends StatelessWidget {
   const ComprasPage({super.key});
 
-  Widget _drop(String rotulo, List<String> opcoes, String? valor,
+  static Widget _drop(String rotulo, List<String> opcoes, String? valor,
       ValueChanged<String?> onChanged) {
     // inclui o valor atual mesmo que a categoria já tenha sido excluída
     final itens = {...opcoes, if (valor != null) valor};
@@ -24,7 +24,9 @@ class ComprasPage extends StatelessWidget {
     );
   }
 
-  Future<void> _form(BuildContext context, [Compra? c]) async {
+  /// Formulário de nova compra (ou de edição, com [c]). Usado também pelo
+  /// botão "+ Compra" da tela principal.
+  static Future<void> formulario(BuildContext context, [Compra? c]) async {
     final store = context.read<Store>();
     final desc = TextEditingController(text: c?.descricao);
     final valorInicial = c == null ? '' : fmtNumero(c.valor);
@@ -141,7 +143,7 @@ class ComprasPage extends StatelessWidget {
     return Scaffold(
       appBar: AppBar(title: const Text('Compras')),
       floatingActionButton: FloatingActionButton(
-          onPressed: () => _form(context), child: const Icon(Icons.add)),
+          onPressed: () => formulario(context), child: const Icon(Icons.add)),
       body: compras.isEmpty
           ? const Center(child: Text('Toque em + para adicionar'))
           : ListView(children: [
@@ -156,7 +158,7 @@ class ComprasPage extends StatelessWidget {
                     c.evento,
                     if (c.gastador.isNotEmpty) store.nomeGastador(c.gastador),
                   ].where((t) => t.isNotEmpty).join(' · ')),
-                  onTap: () => _form(context, c),
+                  onTap: () => formulario(context, c),
                   trailing: Row(mainAxisSize: MainAxisSize.min, children: [
                     Text(fmtValor(c.valor)),
                     IconButton(
