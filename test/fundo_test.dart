@@ -29,4 +29,14 @@ void main() {
     await f.definirOpacidade(3);
     expect(f.opacidade, 1);
   });
+
+  test('com mais de uma imagem sobrando, usa a mais recente', () async {
+    // sobras de uma troca em que apagar a antiga falhou
+    for (final ms in ['1700000000300', '1700000000100', '1700000000200']) {
+      File('${pasta.path}/fundo-$ms').writeAsStringSync(ms);
+    }
+    final f = Fundo(() async => pasta);
+    await f.carregar();
+    expect(f.arquivo!.path, endsWith('fundo-1700000000300'));
+  });
 }

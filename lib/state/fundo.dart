@@ -20,11 +20,14 @@ class Fundo extends ChangeNotifier {
 
   static const _prefixo = 'fundo-';
 
+  /// Ordenados do mais antigo ao mais novo: o nome leva o horário em
+  /// milissegundos (13 dígitos), e a ordem do listSync não é garantida.
   Future<List<File>> _existentes() async => (await _pasta())
       .listSync()
       .whereType<File>()
       .where((f) => f.uri.pathSegments.last.startsWith(_prefixo))
-      .toList();
+      .toList()
+    ..sort((a, b) => a.path.compareTo(b.path));
 
   /// Sem fundo ou com falha ao ler: segue sem fundo (não impede o app).
   Future<void> carregar() async {
