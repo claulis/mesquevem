@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 import 'dart:typed_data';
 import 'package:crypto/crypto.dart';
@@ -301,5 +302,26 @@ void main() {
     expect(srv.pedidos, [null, null], reason: 'segundo pedido sem Range');
     expect(a.fase, Fase.pronto);
     expect(await apk().readAsBytes(), dados);
+  });
+
+  test('cancelar com o APK pronto (instalador abrindo) não apaga nada',
+      () async {
+    final instalando = Completer<String>();
+    final a = Atualizador(
+      verificar: () async => Release(9, 'v1.0.0-9', srv.url, sha(dados)),
+      pasta: () async => pasta,
+      instalar: (_) => instalando.future,
+      atual: 8,
+      exigirHttps: false,
+    );
+    final fim = a.atualizar();
+    while (a.fase != Fase.pronto) {
+      await Future<void>.delayed(const Duration(milliseconds: 10));
+    }
+    await a.cancelar();
+    instalando.complete('ok');
+    await fim;
+    expect(a.fase, Fase.pronto);
+    expect(await apk().exists(), isTrue);
   });
 }

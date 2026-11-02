@@ -70,7 +70,7 @@ class AtualizarPage extends StatelessWidget {
           const SizedBox(height: 8),
           const Text('Conferindo a integridade do arquivo…'),
         ],
-        if (a.rodando)
+        if (a.rodando && a.fase != Fase.pronto)
           TextButton.icon(
             icon: const Icon(Icons.close),
             label: const Text('Cancelar'),

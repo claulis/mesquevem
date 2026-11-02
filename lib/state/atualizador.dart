@@ -166,7 +166,8 @@ class Atualizador extends ChangeNotifier {
 
   /// Para e apaga o que foi baixado.
   Future<void> cancelar() async {
-    if (!_rodando) return;
+    // APK já baixado e conferido (abrindo o instalador): nada a cancelar
+    if (!_rodando || fase == Fase.pronto) return;
     _cancelado = true;
     _cliente?.close(force: true);
     if (!(_espera?.isCompleted ?? true)) _espera!.complete();
