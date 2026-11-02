@@ -18,19 +18,60 @@ class HomePage extends StatelessWidget {
   const HomePage({super.key});
 
   /// Linha de uma categoria: nome e gasto do mês; embaixo, o limite (se
-  /// houver) em azul claro, ou vermelho se o gasto passou dele.
+  /// houver) em azul claro, ou vermelho se o gasto passou dele, com uma barra
+  /// de gasto ÷ limite.
   static Widget _categoria(String nome, double gasto, double? limite) {
     final acima = limite != null && gasto > limite;
+    final cor = acima ? corAcima : corLimite;
     return ListTile(
       dense: true,
       title: Text(nome),
       subtitle: limite == null
           ? null
-          : Text('Limite: ${fmtValor(limite)}',
-              style: TextStyle(color: acima ? corAcima : corLimite)),
+          : Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text('Limite: ${fmtValor(limite)}',
+                    style: TextStyle(color: cor)),
+                const SizedBox(height: 4),
+                LinearProgressIndicator(
+                  value: (gasto / limite).clamp(0.0, 1.0),
+                  color: cor,
+                  minHeight: 6,
+                  borderRadius: BorderRadius.circular(3),
+                ),
+              ],
+            ),
       trailing: Text(fmtValor(gasto),
           style: acima ? const TextStyle(color: corAcima) : null),
     );
+  }
+
+  /// Seção "Por categoria"/"Por evento": as com gasto no mês, da maior para
+  /// a menor. As sem gasto ficam recolhidas (categorias) ou somem (eventos,
+  /// que só fazem sentido no mês em que acontecem).
+  static List<Widget> _secao(BuildContext context, Store store, String titulo,
+      TipoCategoria tipo, Map<String, double> gastos) {
+    double g(String n) => gastos[n] ?? 0;
+    final nomes = [...store.categorias(tipo)]
+      ..sort((a, b) => g(b).compareTo(g(a)));
+    final com = nomes.where((n) => g(n) > 0).toList();
+    final sem = nomes.where((n) => g(n) <= 0).toList();
+    if (tipo == TipoCategoria.evento && com.isEmpty) return const [];
+    return [
+      const SizedBox(height: 16),
+      Text(titulo, style: Theme.of(context).textTheme.titleSmall),
+      for (final n in com) _categoria(n, g(n), store.limite(tipo, n)),
+      if (tipo == TipoCategoria.compra && sem.isNotEmpty)
+        ExpansionTile(
+          dense: true,
+          title: Text('Sem gasto neste mês (${sem.length})'),
+          children: [
+            for (final n in sem) _categoria(n, 0, store.limite(tipo, n)),
+          ],
+        ),
+    ];
   }
 
   /// Gasto do mês sobre o teto, com uma marca no ritmo ideal para hoje
@@ -179,15 +220,10 @@ class HomePage extends StatelessWidget {
                     title: Text(i.texto),
                   ),
                 ),
-              for (final (titulo, tipo, gastos) in [
-                ('Por categoria', TipoCategoria.compra, mes.porCategoria),
-                ('Por evento', TipoCategoria.evento, mes.porEvento),
-              ]) ...[
-                const SizedBox(height: 16),
-                Text(titulo, style: tema.titleSmall),
-                for (final nome in store.categorias(tipo))
-                  _categoria(nome, gastos[nome] ?? 0, store.limite(tipo, nome)),
-              ],
+              ..._secao(context, store, 'Por categoria', TipoCategoria.compra,
+                  mes.porCategoria),
+              ..._secao(context, store, 'Por evento', TipoCategoria.evento,
+                  mes.porEvento),
             ]),
       ),
     );

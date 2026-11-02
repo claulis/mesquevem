@@ -161,4 +161,32 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.textContaining('Método:'), findsOneWidget);
   });
+
+  testWidgets(
+      'home: categorias por gasto, zeradas recolhidas, eventos sem '
+      'gasto somem', (tester) async {
+    tester.view.physicalSize = const Size(800, 3000);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    final hoje = DateTime.now();
+    await tester.runAsync(() async {
+      await store.salvarCompra(Compra(hoje, 10, categoria: 'Lazer'));
+      await store.salvarCompra(
+          Compra(hoje, 90, categoria: 'Transporte', evento: 'Viagem'));
+    });
+    await tester.pumpWidget(ChangeNotifierProvider.value(
+        value: store, child: const MaterialApp(home: HomePage())));
+
+    // maior gasto primeiro
+    expect(tester.getTopLeft(find.text('Transporte')).dy,
+        lessThan(tester.getTopLeft(find.text('Lazer')).dy));
+    // zeradas recolhidas até tocar
+    expect(find.text('Alimentação'), findsNothing);
+    await tester.tap(find.text('Sem gasto neste mês (2)'));
+    await tester.pumpAndSettle();
+    expect(find.text('Alimentação'), findsOneWidget);
+    // eventos: só o que teve gasto
+    expect(find.text('Viagem'), findsOneWidget);
+    expect(find.text('Natal'), findsNothing);
+  });
 }
