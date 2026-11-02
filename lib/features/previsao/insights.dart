@@ -75,8 +75,14 @@ List<Insight> insights({
     (limEvento, mes.porEvento),
   ]) {
     for (final MapEntry(key: nome, value: l) in lim.entries) {
-      final usado = (gastos[nome] ?? 0) / l;
-      if (usado >= 0.8 && usado <= 1) {
+      final gasto = gastos[nome] ?? 0;
+      final usado = gasto / l;
+      if (usado > 1) {
+        r.add((
+          texto: '$nome passou do limite em ${fmtValor(gasto - l)}',
+          alerta: true
+        ));
+      } else if (usado >= 0.8) {
         r.add((
           texto: '$nome já usou ${(usado * 100).floor()}% do limite',
           alerta: true

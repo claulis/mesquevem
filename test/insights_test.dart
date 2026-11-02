@@ -86,6 +86,13 @@ void main() {
         isNot(contains(contains('do limite'))));
   });
 
+  test('categoria que já passou do limite também avisa', () {
+    expect(
+        textos([Compra(dia10, 130, categoria: 'Lazer')],
+            limCompra: {'Lazer': 100}),
+        contains('Lazer passou do limite em R\$ 30,00'));
+  });
+
   test('categoria que mais cresceu sobre a média de 3 meses', () {
     final t = textos([
       for (final m in [6, 7, 8]) ...[
