@@ -143,7 +143,9 @@ class ComprasPage extends StatelessWidget {
     return Scaffold(
       appBar: AppBar(title: const Text('Compras')),
       floatingActionButton: FloatingActionButton(
-          onPressed: () => formulario(context), child: const Icon(Icons.add)),
+          heroTag: null, // há outro botão flutuante na aba Início
+          onPressed: () => formulario(context),
+          child: const Icon(Icons.add)),
       body: compras.isEmpty
           ? const Center(child: Text('Toque em + para adicionar'))
           : ListView(children: [

@@ -4,6 +4,8 @@ import '../../core/format.dart';
 import '../../core/salvar.dart';
 import '../../state/store.dart';
 import '../backup/backup_page.dart';
+import '../categorias/categoria_page.dart';
+import '../gastadores/gastadores_page.dart';
 import 'atualizar_page.dart';
 import 'fundo_page.dart';
 
@@ -70,6 +72,23 @@ class ConfigPage extends StatelessWidget {
     return Scaffold(
       appBar: AppBar(title: const Text('Config')),
       body: ListView(children: [
+        // cadastros que mudam pouco (antes ocupavam a barra de baixo)
+        ListTile(
+          leading: const Icon(Icons.label),
+          title: const Text('Categorias de compra'),
+          onTap: () => abrir(const CategoriaPage(TipoCategoria.compra)),
+        ),
+        ListTile(
+          leading: const Icon(Icons.event),
+          title: const Text('Categorias de evento'),
+          onTap: () => abrir(const CategoriaPage(TipoCategoria.evento)),
+        ),
+        ListTile(
+          leading: const Icon(Icons.people),
+          title: const Text('Gastadores'),
+          onTap: () => abrir(const GastadoresPage()),
+        ),
+        const Divider(),
         ListTile(
           leading: const Icon(Icons.import_export),
           title: const Text('Backup e compartilhamento'),

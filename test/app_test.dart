@@ -19,6 +19,10 @@ class RepositorioComFalha extends RepositorioMemoria {
   }
 }
 
+/// Item da barra de baixo (o mesmo texto pode ser também o título da tela).
+Finder aba_(String rotulo) => find.descendant(
+    of: find.byType(NavigationBar), matching: find.text(rotulo));
+
 Future<void> abrir(WidgetTester tester, RepositorioMemoria repo) async {
   await tester.pumpWidget(
       ChangeNotifierProvider(create: (_) => Store(repo), child: const App()));
@@ -35,19 +39,33 @@ void main() {
     expect(find.text('Previsão para o mês que vem'), findsOneWidget);
     expect(find.text('R\$ 42,00'), findsWidgets);
 
-    for (final (botao, titulo) in [
-      ('Cadastro compra', 'Compras'),
-      ('Categoria evento', 'Categorias de evento'),
-      ('Categoria compra', 'Categorias de compra'),
-      ('Gastadores', 'Gastadores'),
-      ('Config', 'Config'),
+    // abas: a atual fica destacada na barra
+    for (final (aba, titulo) in [
+      ('Compras', 'Compras'),
+      ('Config', 'Config')
     ]) {
-      await tester.tap(find.text(botao));
+      await tester.tap(aba_(aba));
+      await tester.pumpAndSettle();
+      expect(find.widgetWithText(AppBar, titulo), findsOneWidget);
+    }
+    // cadastros que mudam pouco ficam dentro de Config
+    for (final titulo in [
+      'Categorias de compra',
+      'Categorias de evento',
+      'Gastadores',
+    ]) {
+      await tester.tap(find.text(titulo));
       await tester.pumpAndSettle();
       expect(find.widgetWithText(AppBar, titulo), findsOneWidget);
       await tester.pageBack();
       await tester.pumpAndSettle();
     }
+    await tester.tap(aba_('Início'));
+    await tester.pumpAndSettle();
+    expect(find.text('Previsão para o mês que vem'), findsOneWidget);
+    expect(
+        tester.widget<NavigationBar>(find.byType(NavigationBar)).selectedIndex,
+        0);
   });
 
   testWidgets('botão + Compra da tela principal cadastra direto',
@@ -70,7 +88,7 @@ void main() {
         RepositorioMemoria()
           ..dados.compras.add(Compra(DateTime.now(), 10, descricao: 'Café')));
 
-    await tester.tap(find.text('Cadastro compra'));
+    await tester.tap(aba_('Compras'));
     await tester.pumpAndSettle();
     expect(find.text('Café'), findsOneWidget);
     await tester.tap(find.byTooltip('Excluir'));
@@ -179,7 +197,7 @@ void main() {
     await abrir(tester, RepositorioMemoria());
 
     expect(tester.takeException(), isNull);
-    await tester.tap(find.text('Config'));
+    await tester.tap(aba_('Config'));
     await tester.pumpAndSettle();
     expect(find.widgetWithText(AppBar, 'Config'), findsOneWidget);
   });

@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'features/config/atualizar_page.dart';
-import 'features/features.dart';
 import 'features/inicio/inicio_page.dart';
 
 class App extends StatelessWidget {
@@ -18,9 +17,6 @@ class App extends StatelessWidget {
         scaffoldMessengerKey: mensagens,
         theme: ThemeData(colorSchemeSeed: Colors.teal, useMaterial3: true),
         home: const InicioPage(),
-        routes: {
-          for (final f in features) f.rota: f.builder,
-          '/atualizar': (_) => const AtualizarPage(),
-        },
+        routes: {'/atualizar': (_) => const AtualizarPage()},
       );
 }

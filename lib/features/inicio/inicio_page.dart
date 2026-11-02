@@ -6,7 +6,7 @@ import '../../core/ambiente.dart';
 import '../../core/salvar.dart';
 import '../../data/repositorio.dart';
 import '../../state/store.dart';
-import '../previsao/home_page.dart';
+import 'principal_page.dart';
 
 /// Carrega os dados; mostra a home ou, se falhar, a tela de erro.
 class InicioPage extends StatefulWidget {
@@ -57,7 +57,7 @@ class _InicioPageState extends State<InicioPage> {
               recomecar: _recomecar,
             );
           }
-          return const HomePage();
+          return const PrincipalPage();
         },
       );
 }

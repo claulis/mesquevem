@@ -4,7 +4,6 @@ import '../../core/format.dart';
 import '../../state/fundo.dart';
 import '../../state/store.dart';
 import '../compras/compras_page.dart';
-import '../features.dart';
 import 'insights.dart';
 import 'previsao.dart';
 import 'resumo.dart';
@@ -89,6 +88,7 @@ class HomePage extends StatelessWidget {
       appBar: AppBar(title: const Text('Mês que Vem')),
       // a ação mais frequente do app, a um toque
       floatingActionButton: FloatingActionButton.extended(
+        heroTag: null, // há outro botão flutuante na aba Compras
         icon: const Icon(Icons.add),
         label: const Text('Compra'),
         onPressed: () => ComprasPage.formulario(context),
@@ -189,36 +189,6 @@ class HomePage extends StatelessWidget {
                   _categoria(nome, gastos[nome] ?? 0, store.limite(tipo, nome)),
               ],
             ]),
-      ),
-      // altura pelo conteúdo (não fixa), para aguentar fonte grande do sistema
-      bottomNavigationBar: Material(
-        // mesma cor da BottomAppBar do Material 3
-        color: Theme.of(context).colorScheme.surfaceContainer,
-        child: SafeArea(
-          child: IntrinsicHeight(
-            child:
-                Row(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-              for (final f in features)
-                Expanded(
-                  child: InkWell(
-                    onTap: () => Navigator.pushNamed(context, f.rota),
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(vertical: 12),
-                      child: Column(
-                          mainAxisSize: MainAxisSize.min,
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Icon(f.icone),
-                            Text(f.rotulo,
-                                textAlign: TextAlign.center,
-                                style: const TextStyle(fontSize: 12)),
-                          ]),
-                    ),
-                  ),
-                ),
-            ]),
-          ),
-        ),
       ),
     );
   }
