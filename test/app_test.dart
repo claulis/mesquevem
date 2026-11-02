@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:provider/provider.dart';
 import 'package:compras/app.dart';
+import 'package:compras/features/previsao/home_page.dart';
 import 'package:compras/data/compra.dart';
 import 'package:compras/data/repositorio.dart';
 import 'package:compras/state/store.dart';
@@ -200,5 +201,14 @@ void main() {
     await tester.tap(aba_('Config'));
     await tester.pumpAndSettle();
     expect(find.widgetWithText(AppBar, 'Config'), findsOneWidget);
+  });
+
+  testWidgets('tema segue o modo escuro do celular', (tester) async {
+    tester.platformDispatcher.platformBrightnessTestValue = Brightness.dark;
+    addTearDown(tester.platformDispatcher.clearPlatformBrightnessTestValue);
+    await abrir(tester, RepositorioMemoria());
+    final ctx = tester.element(find.text('Previsão para o mês que vem'));
+    expect(Theme.of(ctx).brightness, Brightness.dark);
+    expect(corDoLimite(ctx), corLimiteEscuro);
   });
 }

@@ -16,6 +16,12 @@ class App extends StatelessWidget {
         navigatorKey: navegador,
         scaffoldMessengerKey: mensagens,
         theme: ThemeData(colorSchemeSeed: Colors.teal, useMaterial3: true),
+        // segue o modo claro/escuro do celular
+        darkTheme: ThemeData(
+            colorSchemeSeed: Colors.teal,
+            brightness: Brightness.dark,
+            useMaterial3: true),
+        themeMode: ThemeMode.system,
         home: const InicioPage(),
         routes: {'/atualizar': (_) => const AtualizarPage()},
       );

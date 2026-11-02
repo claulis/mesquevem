@@ -16,15 +16,23 @@ const corLimite = Color(0xFF0277BD),
     corTeto = Colors.blue,
     corAcima = Colors.red;
 
+/// No tema escuro o azul do limite precisa ser mais claro para ser legível.
+const corLimiteEscuro = Color(0xFF4FC3F7);
+Color corDoLimite(BuildContext context) =>
+    Theme.of(context).brightness == Brightness.dark
+        ? corLimiteEscuro
+        : corLimite;
+
 class HomePage extends StatelessWidget {
   const HomePage({super.key});
 
   /// Linha de uma categoria: nome e gasto do mês; embaixo, o limite (se
   /// houver) em azul claro, ou vermelho se o gasto passou dele, com uma barra
   /// de gasto ÷ limite.
-  static Widget _categoria(String nome, double gasto, double? limite) {
+  static Widget _categoria(
+      BuildContext context, String nome, double gasto, double? limite) {
     final acima = limite != null && gasto > limite;
-    final cor = acima ? corAcima : corLimite;
+    final cor = acima ? corAcima : corDoLimite(context);
     return ListTile(
       dense: true,
       title: Text(nome),
@@ -73,13 +81,14 @@ class HomePage extends StatelessWidget {
     return [
       const SizedBox(height: 16),
       Text(titulo, style: Theme.of(context).textTheme.titleSmall),
-      for (final n in com) _categoria(n, g(n), store.limite(tipo, n)),
+      for (final n in com) _categoria(context, n, g(n), store.limite(tipo, n)),
       if (tipo == TipoCategoria.compra && sem.isNotEmpty)
         ExpansionTile(
           dense: true,
           title: Text('Sem gasto neste mês (${sem.length})'),
           children: [
-            for (final n in sem) _categoria(n, 0, store.limite(tipo, n)),
+            for (final n in sem)
+              _categoria(context, n, 0, store.limite(tipo, n)),
           ],
         ),
     ];
@@ -112,7 +121,13 @@ class HomePage extends StatelessWidget {
               left: (c.maxWidth * ideal - 1).clamp(0.0, c.maxWidth - 2),
               top: 0,
               bottom: 0,
-              child: Container(width: 2, color: Colors.black54),
+              // cor do texto do tema: aparece no claro e no escuro
+              child: Container(
+                  width: 2,
+                  color: Theme.of(context)
+                      .colorScheme
+                      .onSurface
+                      .withValues(alpha: 0.6)),
             ),
           ]),
         ),
