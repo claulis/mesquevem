@@ -133,7 +133,7 @@ void main() {
 
     Color? cor(String texto) =>
         tester.widget<Text>(find.text(texto)).style?.color;
-    expect(cor('Teto: R\$ 1000,00'), corTeto);
+    expect(cor('Teto: R\$ 1.000,00'), corTeto);
     expect(cor('Limite: R\$ 50,00'), corLimite);
     expect(cor('Limite: R\$ 10,00'), corAcima);
     // além da cor, texto: quem não distingue vermelho também percebe

@@ -93,4 +93,26 @@ void main() {
     await expectLater(doAmbiente(() async => throw StateError('bug'), 'falhou'),
         throwsStateError);
   });
+
+  test('valores com ponto de milhar', () {
+    expect(fmtNumero(999), '999,00');
+    expect(fmtNumero(1234.5), '1.234,50');
+    expect(fmtNumero(1000000), '1.000.000,00');
+    expect(fmtNumero(-1234.5), '-1.234,50');
+    expect(fmtValor(1000), 'R\$ 1.000,00');
+  });
+
+  test('o que fmtNumero escreve, lerValor lê de volta', () {
+    for (final v in <double>[
+      0.01,
+      12.5,
+      999.99,
+      1000,
+      1234.56,
+      1000000,
+      987654321.09
+    ]) {
+      expect(lerValor(fmtNumero(v)), v, reason: fmtNumero(v));
+    }
+  });
 }

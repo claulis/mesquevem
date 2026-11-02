@@ -2,8 +2,15 @@ String fmtData(DateTime d) =>
     '${d.day.toString().padLeft(2, '0')}/${d.month.toString().padLeft(2, '0')}/${d.year}';
 String fmtValor(double v) => 'R\$ ${fmtNumero(v)}';
 
-/// Número com 2 casas e vírgula decimal ("12,50"), como [lerValor] aceita.
-String fmtNumero(double v) => v.toStringAsFixed(2).replaceAll('.', ',');
+/// Número com 2 casas, vírgula decimal e ponto de milhar ("1.234,50"), como
+/// [lerValor] aceita.
+String fmtNumero(double v) {
+  if (!v.isFinite) return '$v';
+  final [inteiro, centavos] = v.abs().toStringAsFixed(2).split('.');
+  final milhar =
+      inteiro.replaceAllMapped(RegExp(r'\B(?=(\d{3})+$)'), (_) => '.');
+  return '${v < 0 ? '-' : ''}$milhar,$centavos';
+}
 
 /// Maior valor aceito por [lerValor]: R$ 1 trilhão.
 const valorMaximo = 1e12;
