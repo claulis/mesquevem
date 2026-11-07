@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../core/format.dart';
 import '../../state/fundo.dart';
+import '../../state/privacidade.dart';
 import '../../state/store.dart';
 import '../compras/compras_page.dart';
 import '../config/config_page.dart';
@@ -215,11 +216,20 @@ class _HomePageState extends State<HomePage> {
     final teto = store.teto;
     // opcional: os testes montam o app sem ele
     final fundo = context.watch<Fundo?>();
+    final privacidade = context.watch<Privacidade?>();
     final imagem = fundo?.arquivo;
     final tema = Theme.of(context).textTheme;
     final nInsights = insightsDe(store, hoje, valorPrevisto: valor).length;
     return Scaffold(
       appBar: AppBar(title: const Text('Mês que Vem'), actions: [
+        if (privacidade != null)
+          IconButton(
+            tooltip: privacidade.ocultos ? 'Mostrar valores' : 'Ocultar valores',
+            icon: Icon(privacidade.ocultos
+                ? Icons.visibility_off_outlined
+                : Icons.visibility_outlined),
+            onPressed: privacidade.alternar,
+          ),
         // contador como o de notificações: some quando não há insight
         IconButton(
           tooltip: 'Insights',

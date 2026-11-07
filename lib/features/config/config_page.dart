@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import '../../core/dialogo.dart';
 import '../../core/format.dart';
 import '../../core/salvar.dart';
+import '../../state/privacidade.dart';
 import '../../state/store.dart';
 import '../backup/backup_page.dart';
 import '../categorias/categoria_page.dart';
@@ -71,6 +72,7 @@ class ConfigPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    context.watch<Privacidade?>(); // redesenha ao ocultar/mostrar valores
     final teto = context.watch<Store>().teto;
     void abrir(Widget p) =>
         Navigator.push(context, MaterialPageRoute(builder: (_) => p));

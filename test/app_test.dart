@@ -5,7 +5,10 @@ import 'package:compras/app.dart';
 import 'package:compras/features/previsao/home_page.dart';
 import 'package:compras/data/compra.dart';
 import 'package:compras/data/repositorio.dart';
+import 'package:compras/core/format.dart';
+import 'package:compras/state/privacidade.dart';
 import 'package:compras/state/store.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'store_test.dart' show RepositorioMemoria;
 
 /// Falha nas primeiras [falhas] cargas com [erro].
@@ -31,6 +34,38 @@ Future<void> abrir(WidgetTester tester, RepositorioMemoria repo) async {
 }
 
 void main() {
+  testWidgets('olho da Home oculta e mostra os valores em todas as abas',
+      (tester) async {
+    SharedPreferences.setMockInitialValues({});
+    addTearDown(() => valoresOcultos = false);
+    await tester.pumpWidget(MultiProvider(providers: [
+      ChangeNotifierProvider(
+          create: (_) => Store(RepositorioMemoria()
+            ..dados.compras.add(Compra(DateTime.now(), 1234.5)))),
+      ChangeNotifierProvider(create: (_) => Privacidade()),
+    ], child: const App()));
+    await tester.pumpAndSettle();
+    expect(find.text('R\$ 1.234,50'), findsWidgets);
+
+    await tester.tap(find.byTooltip('Ocultar valores'));
+    await tester.pumpAndSettle();
+    expect(find.text('R\$ 1.234,50'), findsNothing);
+    expect(find.text(mascaraValor), findsWidgets);
+    // a aba Compras, viva no IndexedStack, também redesenha
+    await tester.tap(aba_('Compras'));
+    await tester.pumpAndSettle();
+    expect(find.textContaining('1.234,50'), findsNothing);
+    expect((await SharedPreferences.getInstance()).getBool('ocultar_valores'),
+        isTrue);
+
+    await tester.tap(aba_('Início'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byTooltip('Mostrar valores'));
+    await tester.pumpAndSettle();
+    expect(find.text('R\$ 1.234,50'), findsWidgets);
+    expect(find.text(mascaraValor), findsNothing);
+  });
+
   testWidgets('app monta e todas as telas da barra abrem', (tester) async {
     await abrir(
         tester,

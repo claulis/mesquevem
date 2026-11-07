@@ -115,4 +115,13 @@ void main() {
       expect(lerValor(fmtNumero(v)), v, reason: fmtNumero(v));
     }
   });
+  test('valores ocultos viram máscara de tamanho fixo', () {
+    addTearDown(() => valoresOcultos = false);
+    valoresOcultos = true;
+    expect(fmtValor(5), mascaraValor);
+    expect(fmtValor(1234567.89), mascaraValor);
+    expect(fmtNumero(5), '5,00'); // campos de edição seguem com o valor
+    valoresOcultos = false;
+    expect(fmtValor(5), 'R\$ 5,00');
+  });
 }

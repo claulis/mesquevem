@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import '../../state/privacidade.dart';
 import '../../state/store.dart';
 import 'home_page.dart' show corAcima;
 import 'insights.dart';
@@ -26,6 +27,7 @@ class InsightsPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    context.watch<Privacidade?>(); // redesenha ao ocultar/mostrar valores
     final lista = insightsDe(context.watch<Store>(), DateTime.now());
     return Scaffold(
       appBar: AppBar(title: const Text('Insights')),

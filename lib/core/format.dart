@@ -1,6 +1,12 @@
 String fmtData(DateTime d) =>
     '${d.day.toString().padLeft(2, '0')}/${d.month.toString().padLeft(2, '0')}/${d.year}';
-String fmtValor(double v) => 'R\$ ${fmtNumero(v)}';
+/// Ligado pelo botão do olho (ver Privacidade): todo valor exibido vira uma
+/// máscara de tamanho fixo, que não revela nem a ordem de grandeza.
+bool valoresOcultos = false;
+const mascaraValor = 'R\$ •••••';
+
+String fmtValor(double v) =>
+    valoresOcultos ? mascaraValor : 'R\$ ${fmtNumero(v)}';
 
 /// Número com 2 casas, vírgula decimal e ponto de milhar ("1.234,50"), como
 /// [lerValor] aceita.

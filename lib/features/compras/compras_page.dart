@@ -5,6 +5,7 @@ import '../../core/confirmar.dart';
 import '../../core/format.dart';
 import '../../core/salvar.dart';
 import '../../data/compra.dart';
+import '../../state/privacidade.dart';
 import '../../state/store.dart';
 
 class ComprasPage extends StatelessWidget {
@@ -142,6 +143,7 @@ class ComprasPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    context.watch<Privacidade?>(); // redesenha ao ocultar/mostrar valores
     final store = context.watch<Store>();
     final compras = store.compras;
     return Scaffold(

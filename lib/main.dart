@@ -6,6 +6,7 @@ import 'core/aviso_versao.dart';
 import 'data/repositorio_prefs.dart';
 import 'state/atualizador.dart';
 import 'state/fundo.dart';
+import 'state/privacidade.dart';
 import 'state/store.dart';
 
 void main() {
@@ -14,6 +15,7 @@ void main() {
   runApp(MultiProvider(providers: [
     ChangeNotifierProvider(create: (_) => Store(RepositorioPrefs())),
     ChangeNotifierProvider(create: (_) => Fundo()..carregar()),
+    ChangeNotifierProvider(create: (_) => Privacidade()..carregar()),
     // não preguiçoso: download interrompido continua assim que o app abre
     ChangeNotifierProvider(
         lazy: false, create: (_) => Atualizador()..retomarSalvo().ignore()),

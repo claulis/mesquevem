@@ -4,6 +4,7 @@ import '../../core/dialogo.dart';
 import '../../core/confirmar.dart';
 import '../../core/format.dart';
 import '../../core/salvar.dart';
+import '../../state/privacidade.dart';
 import '../../state/store.dart';
 
 class CategoriaPage extends StatelessWidget {
@@ -84,6 +85,7 @@ class CategoriaPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    context.watch<Privacidade?>(); // redesenha ao ocultar/mostrar valores
     final store = context.watch<Store>();
     final lista = store.categorias(tipo);
     return Scaffold(
