@@ -6,6 +6,7 @@ import '../../state/fundo.dart';
 import '../../state/privacidade.dart';
 import '../../state/store.dart';
 import '../compras/compras_page.dart';
+import '../compras/gastos_da_categoria_page.dart';
 import '../config/config_page.dart';
 import 'insights.dart';
 import 'insights_page.dart';
@@ -37,13 +38,18 @@ class HomePage extends StatefulWidget {
   /// Linha de uma categoria: nome e gasto do mês; embaixo, o limite (se
   /// houver) em azul claro, ou vermelho se o gasto passou dele, com uma barra
   /// de gasto ÷ limite.
-  static Widget _categoria(
-      BuildContext context, String nome, double gasto, double? limite) {
+  static Widget _categoria(BuildContext context, TipoCategoria tipo,
+      String nome, double gasto, double? limite, DateTime mes) {
     final acima = limite != null && gasto > limite;
     final cor = acima ? corAcima : corDoLimite(context);
     return ListTile(
       dense: true,
       title: Text(nome),
+      // toque: os gastos que formam o valor
+      onTap: () => Navigator.push(
+          context,
+          MaterialPageRoute(
+              builder: (_) => GastosDaCategoriaPage(tipo, nome, mes))),
       subtitle: limite == null
           ? null
           : Column(
@@ -79,7 +85,7 @@ class HomePage extends StatefulWidget {
   /// a menor. As sem gasto ficam recolhidas (categorias) ou somem (eventos,
   /// que só fazem sentido no mês em que acontecem).
   static List<Widget> _secao(BuildContext context, Store store, String titulo,
-      TipoCategoria tipo, Map<String, double> gastos) {
+      TipoCategoria tipo, Map<String, double> gastos, DateTime mes) {
     double g(String n) => gastos[n] ?? 0;
     final nomes = [...store.categorias(tipo)]
       ..sort((a, b) => g(b).compareTo(g(a)));
@@ -89,14 +95,15 @@ class HomePage extends StatefulWidget {
     return [
       const SizedBox(height: 16),
       Text(titulo, style: Theme.of(context).textTheme.titleSmall),
-      for (final n in com) _categoria(context, n, g(n), store.limite(tipo, n)),
+      for (final n in com)
+        _categoria(context, tipo, n, g(n), store.limite(tipo, n), mes),
       if (tipo == TipoCategoria.compra && sem.isNotEmpty)
         ExpansionTile(
           dense: true,
           title: Text('Sem gasto no mês (${sem.length})'),
           children: [
             for (final n in sem)
-              _categoria(context, n, 0, store.limite(tipo, n)),
+              _categoria(context, tipo, n, 0, store.limite(tipo, n), mes),
           ],
         ),
     ];
@@ -364,9 +371,9 @@ class _HomePageState extends State<HomePage> {
                       ),
                     ),
                     ...HomePage._secao(context, store, 'Por categoria',
-                        TipoCategoria.compra, mes.porCategoria),
+                        TipoCategoria.compra, mes.porCategoria, visto),
                     ...HomePage._secao(context, store, 'Por evento',
-                        TipoCategoria.evento, mes.porEvento),
+                        TipoCategoria.evento, mes.porEvento, visto),
                   ]),
       ),
     );

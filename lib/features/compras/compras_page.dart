@@ -141,6 +141,38 @@ class ComprasPage extends StatelessWidget {
             edicao: c != null));
   }
 
+  /// Linha de um gasto: toque edita, lixeira exclui. Usada também na lista
+  /// de gastos de uma categoria.
+  static Widget linha(BuildContext context, Store store, Compra c) => ListTile(
+        title: Text(c.descricao.isNotEmpty
+            ? c.descricao
+            : (c.categoria.isNotEmpty ? c.categoria : 'Gasto')),
+        subtitle: Text([
+          fmtData(c.data),
+          c.categoria,
+          c.evento,
+          if (c.gastador.isNotEmpty) store.nomeGastador(c.gastador),
+        ].where((t) => t.isNotEmpty).join(' · ')),
+        onTap: () => formulario(context, c),
+        trailing: Row(mainAxisSize: MainAxisSize.min, children: [
+          Text(fmtValor(c.valor)),
+          IconButton(
+            icon: const Icon(Icons.delete),
+            tooltip: 'Excluir',
+            onPressed: () async {
+              final store = context.read<Store>();
+              if (!await confirmar(context, 'Excluir este gasto?')) {
+                return;
+              }
+              if (!context.mounted) return;
+              await avisandoFalha(
+                  context, () => store.removerCompra(c.id),
+                  falha: 'Não foi possível excluir');
+            },
+          ),
+        ]),
+      );
+
   @override
   Widget build(BuildContext context) {
     context.watch<Privacidade?>(); // redesenha ao ocultar/mostrar valores
@@ -157,38 +189,7 @@ class ComprasPage extends StatelessWidget {
           // builder: só monta as linhas visíveis (lista pode ficar longa)
           : ListView.builder(
               itemCount: compras.length,
-              itemBuilder: (context, i) {
-                final c = compras[i];
-                return ListTile(
-                  title: Text(c.descricao.isNotEmpty
-                      ? c.descricao
-                      : (c.categoria.isNotEmpty ? c.categoria : 'Gasto')),
-                  subtitle: Text([
-                    fmtData(c.data),
-                    c.categoria,
-                    c.evento,
-                    if (c.gastador.isNotEmpty) store.nomeGastador(c.gastador),
-                  ].where((t) => t.isNotEmpty).join(' · ')),
-                  onTap: () => formulario(context, c),
-                  trailing: Row(mainAxisSize: MainAxisSize.min, children: [
-                    Text(fmtValor(c.valor)),
-                    IconButton(
-                      icon: const Icon(Icons.delete),
-                      tooltip: 'Excluir',
-                      onPressed: () async {
-                        final store = context.read<Store>();
-                        if (!await confirmar(context, 'Excluir este gasto?')) {
-                          return;
-                        }
-                        if (!context.mounted) return;
-                        await avisandoFalha(
-                            context, () => store.removerCompra(c.id),
-                            falha: 'Não foi possível excluir');
-                      },
-                    ),
-                  ]),
-                );
-              },
+              itemBuilder: (context, i) => linha(context, store, compras[i]),
             ),
     );
   }

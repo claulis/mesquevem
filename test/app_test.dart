@@ -34,6 +34,34 @@ Future<void> abrir(WidgetTester tester, RepositorioMemoria repo) async {
 }
 
 void main() {
+  testWidgets('toque na categoria lista os gastos dela (mês ou todos)',
+      (tester) async {
+    final hoje = DateTime.now();
+    final mesPassado = DateTime(hoje.year, hoje.month - 1, 10);
+    await abrir(
+        tester,
+        RepositorioMemoria()
+          ..dados.compras.addAll([
+            Compra(hoje, 10, descricao: 'Pão', categoria: 'Alimentação'),
+            Compra(hoje, 20, descricao: 'Leite', categoria: 'Alimentação'),
+            Compra(mesPassado, 30,
+                descricao: 'Feira', categoria: 'Alimentação'),
+            Compra(hoje, 40, descricao: 'Ônibus', categoria: 'Transporte'),
+          ]));
+    await tester.tap(find.text('Alimentação'));
+    await tester.pumpAndSettle();
+    expect(find.widgetWithText(AppBar, 'Alimentação'), findsOneWidget);
+    expect(find.text('2 gastos · R\$ 30,00'), findsOneWidget);
+    expect(find.text('Pão'), findsOneWidget);
+    expect(find.text('Feira'), findsNothing);
+    expect(find.text('Ônibus'), findsNothing);
+
+    await tester.tap(find.text('Todos os meses'));
+    await tester.pumpAndSettle();
+    expect(find.text('3 gastos · R\$ 60,00'), findsOneWidget);
+    expect(find.text('Feira'), findsOneWidget);
+  });
+
   testWidgets('olho da Home oculta e mostra os valores em todas as abas',
       (tester) async {
     SharedPreferences.setMockInitialValues({});
