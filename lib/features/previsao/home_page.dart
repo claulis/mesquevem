@@ -8,6 +8,7 @@ import '../../state/store.dart';
 import '../compras/compras_page.dart';
 import '../compras/gastos_da_categoria_page.dart';
 import '../config/config_page.dart';
+import '../graficos/graficos_page.dart';
 import 'insights.dart';
 import 'insights_page.dart';
 import 'previsao.dart';
@@ -237,6 +238,12 @@ class _HomePageState extends State<HomePage> {
                 : Icons.visibility_outlined),
             onPressed: privacidade.alternar,
           ),
+        IconButton(
+          tooltip: 'Gráficos',
+          icon: const Icon(Icons.bar_chart),
+          onPressed: () => Navigator.push(context,
+              MaterialPageRoute(builder: (_) => GraficosPage(visto))),
+        ),
         // contador como o de notificações: some quando não há insight
         IconButton(
           tooltip: 'Insights',

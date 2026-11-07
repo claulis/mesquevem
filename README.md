@@ -16,7 +16,7 @@
 [![SharedPreferences](https://img.shields.io/badge/dados-SharedPreferences-00897B)](https://pub.dev/packages/shared_preferences)
 [![GitHub Actions](https://img.shields.io/badge/CI-GitHub%20Actions-2088FF?logo=githubactions&logoColor=white)](https://github.com/claulis/mesquevem/actions)
 [![Release](https://img.shields.io/github/v/release/claulis/mesquevem?label=vers%C3%A3o&color=009C3B)](https://github.com/claulis/mesquevem/releases/latest)
-[![Testes](https://img.shields.io/badge/testes-153%20passando-brightgreen)](test)
+[![Testes](https://img.shields.io/badge/testes-162%20passando-brightgreen)](test)
 [![Feito com](https://img.shields.io/badge/feito%20com-%E2%98%95%20e%20boletos-FFDF00)](#)
 
 </div>
@@ -27,7 +27,7 @@
 
 Toda família tem aquele momento: dia 20, conta zerada e alguém pergunta *"pra onde foi o dinheiro?"*. O **Mês que Vem** existe para trocar essa pergunta por outra, mais simpática: *"quanto vamos gastar no mês que vem?"*.
 
-Você registra as compras do dia a dia e o app:
+Você registra os gastos do dia a dia e o app:
 
 - 🔮 **prevê** quanto a família vai gastar no mês seguinte;
 - 🚦 **avisa** quando uma categoria ou o mês inteiro está passando do combinado;
@@ -40,19 +40,21 @@ Tudo **offline** e no próprio celular. Sem cadastro, sem nuvem, sem ninguém ve
 | | Funcionalidade | O que faz |
 |---|---|---|
 | 🏠 | **Tela principal** | Cartão do mês no topo: gasto até agora, teto, barra e quanto ainda dá para gastar por dia. Setas (ou deslizar o cartão) mostram os meses anteriores. A previsão fica num cartão menor, com o método no ⓘ |
-| 🧭 | **Navegação** | Barra de baixo com **Início · Compras · Config**, com a aba atual destacada. Categorias e Gastadores ficam dentro de Config |
-| 🛒 | **Cadastro de compras** | Valor, data, descrição, categoria, evento e *gastador*. O botão **+ Compra** da tela principal abre o formulário direto |
+| 🧭 | **Navegação** | Barra de baixo com **Início · Gastos · Config**, com a aba atual destacada. Categorias e Gastadores ficam dentro de Config |
+| 🛒 | **Cadastro de gastos** | Valor, data, descrição, categoria, evento e *gastador*. O botão **+ Gasto** da tela principal abre o formulário direto |
+| 👆 | **Gastos da categoria** | Tocar numa categoria ou num evento da tela principal lista os gastos que formam o valor: os do mês na tela ou de todos os meses, com o total. Dá para editar e excluir dali |
 | 🏷️ | **Categorias com limite** | Limite mensal por categoria, com barra de progresso na tela principal: azul claro e, quando estoura, 🟥 vermelho com o aviso ⚠ "acima do limite". A lista vem da maior para a menor; as sem gasto ficam recolhidas |
 | 🎉 | **Eventos** | Natal, aniversário, viagem… para saber quanto custou aquela festa "simples" |
-| 👨‍👩‍👧 | **Gastadores** | O núcleo familiar (nome, aniversário, sexo). Cada compra pode ser de alguém ou de **Todos** |
+| 👨‍👩‍👧 | **Gastadores** | O núcleo familiar (nome, aniversário, sexo). Cada gasto pode ser de alguém ou de **Todos** |
 | 🧢 | **Teto de gastos** | Quanto a família pode gastar no mês, com barra de progresso e a marca do ritmo ideal para hoje |
 | 💡 | **Insights** | Botão 💡 na tela principal com o número de insights no canto, como um contador de notificações. Abre a lista: ritmo do mês, quanto ainda pode gastar por dia, comparação com o mês passado, categorias perto do limite, aniversários chegando (alertas primeiro) |
 | 👁️ | **Ocultar valores** | Botão do olho ao lado do 💡, como nos apps de banco: troca todos os valores por R$ ••••• para tirar print sem expor os gastos. A escolha continua ao reabrir o app |
+| 📊 | **Gráficos** | Botão 📊 na tela principal, para o mês que estiver na tela: últimos 6 meses com o teto e a previsão, ritmo do mês (gasto acumulado contra o ritmo ideal ou o mês anterior), por gastador, categorias contra a média de 3 meses, mapa de calor dos dias, custo por evento (este ano e o anterior), composição por categoria e gasto por dia da semana. Tocar numa barra ou num dia mostra o valor |
 | 🔮 | **Previsão** | Três métodos estatísticos que se revezam conforme o histórico cresce (veja a seção Previsão de gastos) |
 | 💾 | **Backup e compartilhamento** | Exporta e importa um JSON, ou manda direto pelo WhatsApp, e-mail ou Drive |
 | 🖼️ | **Fundo personalizado** | *"Coloque uma imagem de quem, ou que, te inspira a gastar menos ou de quem, ou que, te faz gastar mais 😄"*. A opacidade da imagem é ajustável de 5% a 100%, com prévia |
 | 🌙 | **Tema escuro** | Segue o modo claro/escuro do celular |
-| 👋 | **Primeiro uso** | Sem nenhuma compra, a tela principal mostra boas-vindas com os dois passos para começar: cadastrar a primeira compra e definir o teto |
+| 👋 | **Primeiro uso** | Sem nenhum gasto, a tela principal mostra boas-vindas com os dois passos para começar: cadastrar o primeiro gasto e definir o teto |
 | 🔄 | **Atualizar pelo app** | Config → Atualizar: confere a última versão no GitHub, baixa e abre o instalador. O download **continua de onde parou** se a internet cair, se você sair da tela ou até se fechar o app, e o SHA-256 é conferido antes de instalar |
 | 🔔 | **Aviso de versão nova** | A cada ~12h o app dá uma espiada no GitHub e notifica se saiu versão nova |
 
@@ -60,7 +62,7 @@ Tudo **offline** e no próprio celular. Sem cadastro, sem nuvem, sem ninguém ve
 
 ### O que é previsto
 
-O app soma o valor de todas as compras de cada mês, formando o **histórico mensal** da família. Entram nesse histórico apenas os **meses fechados**, do primeiro mês com alguma compra até o mês passado, limitados aos últimos 36 meses (o método mais exigente usa 24). Um mês sem compras nesse intervalo conta como R$ 0. O mês atual fica de fora, porque ainda está em andamento.
+O app soma o valor de todos os gastos de cada mês, formando o **histórico mensal** da família. Entram nesse histórico apenas os **meses fechados**, do primeiro mês com algum gasto até o mês passado, limitados aos últimos 36 meses (o método mais exigente usa 24). Um mês sem gastos nesse intervalo conta como R$ 0. O mês atual fica de fora, porque ainda está em andamento.
 
 A partir desse histórico, o app estima quanto será gasto no **mês que vem**, ou seja, no mês seguinte ao atual. O cálculo está na função `previsao`, em [`lib/features/previsao/previsao.dart`](lib/features/previsao/previsao.dart), que não depende do Flutter e é coberta por testes.
 
@@ -142,13 +144,15 @@ flowchart TD
     subgraph UI["features/ (apresentação)"]
         H[Início: mês atual, previsão, categorias]
         I[Insights]
-        C[Compras]
+        C[Gastos]
+        G[Gráficos]
         CFG[Config: categorias, gastadores, backup, fundo, teto, atualizar]
     end
     subgraph Estado["state/"]
         S[Store<br/>regras de negócio e fila de operações]
         F[Fundo<br/>imagem de fundo do aparelho]
         AT[Atualizador<br/>download retomável]
+        P[Privacidade<br/>ocultar valores]
     end
     subgraph Dados["data/"]
         R[[Repositorio<br/>interface]]
@@ -206,13 +210,14 @@ lib/
 │   ├── compra.dart · gastador.dart
 │   ├── repositorio.dart   #   Dados (v3), migração, interface
 │   └── repositorio_prefs.dart
-├── state/                 # Store (regras), Fundo e Atualizador
+├── state/                 # Store (regras), Fundo, Privacidade e Atualizador
 └── features/              # uma pasta por tela
     ├── previsao/          #   home, previsão, resumo, insights (regras e tela)
     ├── compras/ · categorias/ · gastadores/
+    ├── graficos/          #   dados dos 8 gráficos (puros) e a tela
     ├── backup/ · config/  #   backup, fundo, teto, atualizar
     └── inicio/            #   carga inicial, tela de erro e abas
-test/                      # 153 testes (unidade e widget)
+test/                      # 162 testes (unidade e widget)
 tool/make_icon.py          # gera o ícone (calendário nas cores do Brasil)
 ```
 
@@ -228,7 +233,7 @@ tool/make_icon.py          # gera o ícone (calendário nas cores do Brasil)
 
 ```bash
 flutter pub get
-flutter test        # 153 testes
+flutter test        # 162 testes
 flutter run         # com um celular ou emulador Android conectado
 ```
 

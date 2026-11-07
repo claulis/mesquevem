@@ -8,6 +8,13 @@ const mascaraValor = 'R\$ •••••';
 String fmtValor(double v) =>
     valoresOcultos ? mascaraValor : 'R\$ ${fmtNumero(v)}';
 
+/// Rótulo curto para cima das barras dos gráficos ("850", "1,2 mil").
+String fmtCurto(double v) => valoresOcultos
+    ? '•••'
+    : v >= 999.5
+        ? '${(v / 1000).toStringAsFixed(1).replaceAll('.', ',')} mil'
+        : v.toStringAsFixed(0);
+
 /// Número com 2 casas, vírgula decimal e ponto de milhar ("1.234,50"), como
 /// [lerValor] aceita.
 String fmtNumero(double v) {
