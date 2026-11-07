@@ -46,7 +46,7 @@ void main() {
     ]) {
       await preencherESalvar(tester, v);
       expect(find.text(msg), findsOneWidget, reason: v);
-      expect(find.text('Nova compra'), findsOneWidget, reason: v);
+      expect(find.text('Novo gasto'), findsOneWidget, reason: v);
     }
     expect(store.compras, isEmpty);
     expect(repo.salvamentos, 0);
@@ -78,7 +78,7 @@ void main() {
   testWidgets('editar compra de 1999 abre o seletor de data sem erro',
       (tester) async {
     await abrir(tester, compras: [Compra(DateTime(1999, 12, 31), 10)]);
-    await tester.tap(find.text('Compra'));
+    await tester.tap(find.text('Gasto'));
     await tester.pumpAndSettle();
     await tester.tap(find.byIcon(Icons.calendar_today));
     await tester.pumpAndSettle();

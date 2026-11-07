@@ -120,8 +120,8 @@ class BackupPage extends StatelessWidget {
     if (!context.mounted) return;
     final ok = await confirmar(
         context,
-        'Substituir TODOS os dados atuais (${store.compras.length} compras e '
-        'categorias) pelos do arquivo (${lido.compras.length} compras)?\n\n'
+        'Substituir TODOS os dados atuais (${store.compras.length} gastos e '
+        'categorias) pelos do arquivo (${lido.compras.length} gastos)?\n\n'
         'Exporte antes se quiser guardar os dados atuais.',
         acao: 'Importar');
     if (!ok || !context.mounted) return;
@@ -140,7 +140,7 @@ class BackupPage extends StatelessWidget {
       appBar: AppBar(title: const Text('Backup e compartilhamento')),
       body: ListView(padding: const EdgeInsets.all(16), children: [
         Text(
-            'Neste aparelho: ${store.compras.length} compras e $nCat categorias.'),
+            'Neste aparelho: ${store.compras.length} gastos e $nCat categorias.'),
         const SizedBox(height: 8),
         Text(
             'O arquivo de backup leva todos os dados e não é criptografado: '

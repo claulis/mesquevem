@@ -36,7 +36,7 @@ class InsightsPage extends StatelessWidget {
               child: Padding(
                 padding: EdgeInsets.all(16),
                 child: Text('Nenhum insight agora. Eles aparecem conforme '
-                    'você registra compras e define teto e limites.'),
+                    'você registra gastos e define teto e limites.'),
               ),
             )
           : ListView(padding: const EdgeInsets.all(8), children: [

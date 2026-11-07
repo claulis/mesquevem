@@ -172,7 +172,7 @@ class _HomePageState extends State<HomePage> {
           ListTile(
             contentPadding: EdgeInsets.zero,
             leading: const Icon(Icons.add_shopping_cart),
-            title: const Text('1. Cadastre a primeira compra'),
+            title: const Text('1. Cadastre o primeiro gasto'),
             trailing: const Icon(Icons.chevron_right),
             onTap: () => ComprasPage.formulario(context),
           ),
@@ -244,9 +244,9 @@ class _HomePageState extends State<HomePage> {
       ]),
       // a ação mais frequente do app, a um toque
       floatingActionButton: FloatingActionButton.extended(
-        heroTag: null, // há outro botão flutuante na aba Compras
+        heroTag: null, // há outro botão flutuante na aba Gastos
         icon: const Icon(Icons.add),
-        label: const Text('Compra'),
+        label: const Text('Gasto'),
         onPressed: () => ComprasPage.formulario(context),
       ),
       body: DecoratedBox(
@@ -261,7 +261,7 @@ class _HomePageState extends State<HomePage> {
                   opacity: fundo!.opacidade),
         ),
         // rolável: com fonte grande o conteúdo pode não caber na tela;
-        // embaixo, espaço para o botão "+ Compra" não cobrir a última linha
+        // embaixo, espaço para o botão "+ Gasto" não cobrir a última linha
         child: ListView(
             padding: const EdgeInsets.fromLTRB(16, 16, 16, 88),
             children: store.compras.isEmpty

@@ -104,7 +104,7 @@ class GastadoresPage extends StatelessWidget {
               child: Padding(
               padding: EdgeInsets.all(16),
               child: Text('Cadastre as pessoas da família. Sem gastadores, '
-                  'as compras ficam como "Todos".'),
+                  'os gastos ficam como "Todos".'),
             ))
           : ListView(children: [
               for (final g in lista)
@@ -120,7 +120,7 @@ class GastadoresPage extends StatelessWidget {
                       final store = context.read<Store>();
                       if (!await confirmar(
                           context,
-                          'Excluir "${g.nome}"? As compras dele passam '
+                          'Excluir "${g.nome}"? Os gastos dele passam '
                           'para "Todos".')) {
                         return;
                       }

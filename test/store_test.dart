@@ -226,7 +226,7 @@ void main() {
     await expectLater(
         edicao,
         throwsA(isA<OperacaoRecusada>()
-            .having((e) => e.motivo, 'motivo', contains('excluída'))));
+            .having((e) => e.motivo, 'motivo', contains('excluído'))));
     expect(store.compras, isEmpty);
   });
 

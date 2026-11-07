@@ -89,7 +89,7 @@ class CategoriaPage extends StatelessWidget {
     final store = context.watch<Store>();
     final lista = store.categorias(tipo);
     return Scaffold(
-      appBar: AppBar(title: Text('Categorias de ${tipo.name}')),
+      appBar: AppBar(title: Text('Categorias de ${tipo.rotulo}')),
       floatingActionButton: FloatingActionButton(
           onPressed: () => _form(context), child: const Icon(Icons.add)),
       body: ListView(children: [

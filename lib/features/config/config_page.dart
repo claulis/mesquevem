@@ -82,7 +82,7 @@ class ConfigPage extends StatelessWidget {
         // cadastros que mudam pouco (antes ocupavam a barra de baixo)
         ListTile(
           leading: const Icon(Icons.label),
-          title: const Text('Categorias de compra'),
+          title: const Text('Categorias de gasto'),
           onTap: () => abrir(const CategoriaPage(TipoCategoria.compra)),
         ),
         ListTile(

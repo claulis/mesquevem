@@ -27,7 +27,7 @@ class ComprasPage extends StatelessWidget {
   }
 
   /// Formulário de nova compra (ou de edição, com [c]). Usado também pelo
-  /// botão "+ Compra" da tela principal.
+  /// botão "+ Gasto" da tela principal.
   static Future<void> formulario(BuildContext context, [Compra? c]) async {
     final store = context.read<Store>();
     final desc = TextEditingController(text: c?.descricao);
@@ -47,7 +47,7 @@ class ComprasPage extends StatelessWidget {
       builder: (ctx) => DonoDosCampos(
         campos: [desc, valor],
         builder: (ctx, setD) => AlertDialog(
-          title: Text(c == null ? 'Nova compra' : 'Editar compra'),
+          title: Text(c == null ? 'Novo gasto' : 'Editar gasto'),
           content: SingleChildScrollView(
             child: Column(mainAxisSize: MainAxisSize.min, children: [
               TextField(
@@ -64,7 +64,7 @@ class ComprasPage extends StatelessWidget {
                       labelText: 'Valor (R\$)', errorText: erroValor)),
               const SizedBox(height: 8),
               _drop(
-                  'Categoria da compra',
+                  'Categoria do gasto',
                   store.categorias(TipoCategoria.compra),
                   cat,
                   (v) => setD(() => cat = v)),
@@ -147,7 +147,7 @@ class ComprasPage extends StatelessWidget {
     final store = context.watch<Store>();
     final compras = store.compras;
     return Scaffold(
-      appBar: AppBar(title: const Text('Compras')),
+      appBar: AppBar(title: const Text('Gastos')),
       floatingActionButton: FloatingActionButton(
           heroTag: null, // há outro botão flutuante na aba Início
           onPressed: () => formulario(context),
@@ -162,7 +162,7 @@ class ComprasPage extends StatelessWidget {
                 return ListTile(
                   title: Text(c.descricao.isNotEmpty
                       ? c.descricao
-                      : (c.categoria.isNotEmpty ? c.categoria : 'Compra')),
+                      : (c.categoria.isNotEmpty ? c.categoria : 'Gasto')),
                   subtitle: Text([
                     fmtData(c.data),
                     c.categoria,
@@ -177,7 +177,7 @@ class ComprasPage extends StatelessWidget {
                       tooltip: 'Excluir',
                       onPressed: () async {
                         final store = context.read<Store>();
-                        if (!await confirmar(context, 'Excluir esta compra?')) {
+                        if (!await confirmar(context, 'Excluir este gasto?')) {
                           return;
                         }
                         if (!context.mounted) return;

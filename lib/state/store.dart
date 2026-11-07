@@ -6,7 +6,13 @@ import '../data/compra.dart';
 import '../data/gastador.dart';
 import '../data/repositorio.dart';
 
-enum TipoCategoria { compra, evento }
+enum TipoCategoria {
+  compra,
+  evento;
+
+  /// Como aparece na tela: no app a compra se chama "gasto".
+  String get rotulo => this == compra ? 'gasto' : 'evento';
+}
 
 /// Lançada quando uma alteração não pode ser feita no estado atual (ex.: nome
 /// de categoria que passou a existir enquanto o diálogo estava aberto).
@@ -112,7 +118,7 @@ class Store extends ChangeNotifier {
         }
       },
           recusa: () => edicao && !_d.compras.any((x) => x.id == c.id)
-              ? 'esta compra foi excluída'
+              ? 'este gasto foi excluído'
               : null);
 
   /// Compra que já não existe: nada a fazer.

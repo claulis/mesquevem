@@ -52,7 +52,7 @@ void main() {
     expect(find.text('R\$ 1.234,50'), findsNothing);
     expect(find.text(mascaraValor), findsWidgets);
     // a aba Compras, viva no IndexedStack, também redesenha
-    await tester.tap(aba_('Compras'));
+    await tester.tap(aba_('Gastos'));
     await tester.pumpAndSettle();
     expect(find.textContaining('1.234,50'), findsNothing);
     expect((await SharedPreferences.getInstance()).getBool('ocultar_valores'),
@@ -77,7 +77,7 @@ void main() {
 
     // abas: a atual fica destacada na barra
     for (final (aba, titulo) in [
-      ('Compras', 'Compras'),
+      ('Gastos', 'Gastos'),
       ('Config', 'Config')
     ]) {
       await tester.tap(aba_(aba));
@@ -86,7 +86,7 @@ void main() {
     }
     // cadastros que mudam pouco ficam dentro de Config
     for (final titulo in [
-      'Categorias de compra',
+      'Categorias de gasto',
       'Categorias de evento',
       'Gastadores',
     ]) {
@@ -108,9 +108,9 @@ void main() {
       (tester) async {
     final repo = RepositorioMemoria();
     await abrir(tester, repo);
-    await tester.tap(find.widgetWithText(FloatingActionButton, 'Compra'));
+    await tester.tap(find.widgetWithText(FloatingActionButton, 'Gasto'));
     await tester.pumpAndSettle();
-    expect(find.text('Nova compra'), findsOneWidget);
+    expect(find.text('Novo gasto'), findsOneWidget);
     await tester.enterText(
         find.widgetWithText(TextField, 'Valor (R\$)'), '12,50');
     await tester.tap(find.text('Salvar'));
@@ -124,7 +124,7 @@ void main() {
         RepositorioMemoria()
           ..dados.compras.add(Compra(DateTime.now(), 10, descricao: 'Café')));
 
-    await tester.tap(aba_('Compras'));
+    await tester.tap(aba_('Gastos'));
     await tester.pumpAndSettle();
     expect(find.text('Café'), findsOneWidget);
     await tester.tap(find.byTooltip('Excluir'));
@@ -263,7 +263,7 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('2. Teto definido: R\$ 500,00'), findsOneWidget);
 
-    await tester.tap(find.text('1. Cadastre a primeira compra'));
+    await tester.tap(find.text('1. Cadastre o primeiro gasto'));
     await tester.pumpAndSettle();
     await tester.enterText(find.widgetWithText(TextField, 'Valor (R\$)'), '20');
     await tester.tap(find.text('Salvar'));

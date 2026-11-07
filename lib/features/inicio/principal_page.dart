@@ -28,9 +28,9 @@ class _PrincipalPageState extends State<PrincipalPage> {
                 selectedIcon: Icon(Icons.home),
                 label: 'Início'),
             NavigationDestination(
-                icon: Icon(Icons.shopping_cart_outlined),
-                selectedIcon: Icon(Icons.shopping_cart),
-                label: 'Compras'),
+                icon: Icon(Icons.receipt_long_outlined),
+                selectedIcon: Icon(Icons.receipt_long),
+                label: 'Gastos'),
             NavigationDestination(
                 icon: Icon(Icons.settings_outlined),
                 selectedIcon: Icon(Icons.settings),
