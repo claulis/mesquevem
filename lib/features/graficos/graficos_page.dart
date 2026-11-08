@@ -26,6 +26,81 @@ const _semDados = Padding(
     child: Text('Sem gastos para mostrar'));
 const _diasDaSemana = ['D', 'S', 'T', 'Q', 'Q', 'S', 'S'];
 
+// Textos do ⓘ de cada gráfico: o que mostra, como ler e cuidados.
+const ajudaSeisMeses = 'Cada coluna é o total gasto em um mês, dos 5 '
+    'anteriores até o mês na tela. O número em cima é o total (mil = '
+    'milhares); toque na coluna para o valor exato.\n\n'
+    'A linha horizontal é o teto: coluna acima dela = mês que estourou.\n\n'
+    'A coluna clara ("prev.") é a previsão para o mês que vem, e só aparece '
+    'quando a tela está no mês atual.\n\n'
+    'Como ler: colunas descendo = a família está gastando menos. O mês '
+    'atual ainda está em andamento, então costuma ser menor.';
+
+const ajudaRitmo = 'A linha cheia é o gasto somado dia a dia no mês: no '
+    'dia 10, mostra tudo o que foi gasto do dia 1 ao 10. O ponto é o dia de '
+    'hoje.\n\n'
+    'A linha tracejada é a referência: com teto, o ritmo ideal (sai do zero '
+    'e chega ao teto no último dia); sem teto, o mesmo acumulado do mês '
+    'anterior.\n\n'
+    'Como ler: linha cheia acima da tracejada = gastando mais rápido que o '
+    'ideal (ou que o mês passado); abaixo = dentro do ritmo. Degraus altos '
+    'são dias de gasto grande.';
+
+const ajudaGastador = 'Quanto cada pessoa da família gastou no mês na '
+    'tela, do maior para o menor. "Todos" são os gastos lançados sem '
+    'gastador.\n\n'
+    'Como ler: mostra quem mais pesa no orçamento do mês. Para comparar de '
+    'forma justa, lance cada gasto com o gastador certo; um "Todos" grande '
+    'esconde quem gastou.';
+
+const ajudaCategorias = 'Para cada categoria, duas barras: a primeira é '
+    'o gasto no mês na tela e a segunda é a média dos 3 meses anteriores.\n\n'
+    'Como ler: primeira barra maior que a segunda = a categoria está acima '
+    'do normal neste mês; menor = abaixo. É aqui que se vê onde o mês '
+    'fugiu do padrão.\n\n'
+    'Cuidado: no mês atual, ainda em andamento, as barras do mês tendem a '
+    'ser menores que a média.';
+
+const ajudaCalor = 'Cada quadrado é um dia do mês, na cor do quanto se '
+    'gastou nele: verde = pouco, amarelo = médio, vermelho = muito. Cinza = '
+    'nenhum gasto. Toque no dia para ver o valor.\n\n'
+    'Com teto, a régua é o quanto cabe por dia (teto ÷ dias do mês): '
+    'amarelo é um dia no limite e vermelho é o dobro ou mais. Sem teto, '
+    'vermelho é o dia que mais gastou no mês.\n\n'
+    'Como ler: vermelhos repetidos no mesmo dia da semana mostram um hábito '
+    '(feira, saída de fim de semana); um vermelho isolado costuma ser uma '
+    'compra grande.';
+
+const ajudaEventos = 'Para cada evento (Natal, viagem, aniversário...), '
+    'duas barras: o total gasto nele no ano do mês na tela e no ano '
+    'anterior. Os mais caros deste ano vêm primeiro.\n\n'
+    'Como ler: primeira barra maior = o evento ficou mais caro que no ano '
+    'passado. Só a segunda = ainda não aconteceu (ou não foi lançado) neste '
+    'ano.\n\n'
+    'Cuidados: o ano é o do calendário (janeiro a dezembro), então em '
+    'novembro o Natal deste ano ainda está incompleto. Só entram os gastos '
+    'lançados com o evento marcado.\n\n'
+    'Para que serve: planejar o próximo. Se o Natal passado custou R\$ '
+    '1.200, dá para guardar aos poucos nos meses anteriores.';
+
+const ajudaComposicao = 'A rosca divide o total do mês na tela entre as '
+    'categorias: cada fatia é a parte de uma categoria, com a % e o valor '
+    'na legenda. As 7 maiores aparecem com cor; o resto é somado em '
+    '"Outras", em cinza.\n\n'
+    'Como ler: mostra para onde vai a maior parte do dinheiro. Para cortar '
+    'gastos, comece pelas fatias maiores.';
+
+const ajudaSemana = 'Cada coluna é a soma de tudo o que foi gasto naquele '
+    'dia da semana (D, S, T, Q, Q, S, S) nos últimos 12 meses. Cada dia da '
+    'semana aparece umas 52 vezes nesse período, então as colunas são '
+    'comparáveis.\n\n'
+    'Como ler: a coluna mais alta é o dia em que a família mais gasta. Fim '
+    'de semana alto = lazer e saídas; um dia útil alto costuma ser o dia do '
+    'mercado ou de uma conta fixa. Colunas parecidas = gastos espalhados.\n\n'
+    'Cuidados: vale a data lançada no gasto (lançar vários de uma vez com a '
+    'data de hoje infla o dia de hoje), e uma compra grande isolada sobe '
+    'uma coluna sozinha.';
+
 /// Os gráficos do mês que estava na tela principal. Tocar numa barra ou num
 /// dia mostra o valor.
 class GraficosPage extends StatelessWidget {
@@ -84,19 +159,22 @@ class GraficosPage extends StatelessWidget {
             for (final (m, t) in seis) (meses[m.month - 1].substring(0, 3), t),
             if (atual) ('prev.', previsto),
           ], cor: cor[0], linha: teto, ultimaClara: atual),
+          ajuda: ajudaSeisMeses,
         ),
         _Cartao(
             'Ritmo do mês',
             'cheia: gasto acumulado · tracejada: $rotuloRef',
             _Ritmo(serie, ref,
-                dias: dia.length, cor: cor[0], rotuloRef: rotuloRef)),
+                dias: dia.length, cor: cor[0], rotuloRef: rotuloRef),
+            ajuda: ajudaRitmo),
         _Cartao(
             'Por gastador',
             nomeMes,
             gastadores.isEmpty
                 ? _semDados
                 : _Barras([for (final e in gastadores) (e.key, e.value)],
-                    cor[0])),
+                    cor[0]),
+            ajuda: ajudaGastador),
         _Cartao(
             'Categorias: mês × média',
             'média dos 3 meses anteriores',
@@ -109,9 +187,12 @@ class GraficosPage extends StatelessWidget {
                         doMes[k] ?? 0,
                         media[k] ?? 0
                       )
-                  ], legenda: (nomeMes, 'média'), cores: (cor[0], cor[1]))),
-        _Cartao('Mapa de calor', 'quanto mais escuro o dia, mais gasto',
-            _Calor(mes, dia, cor[0])),
+                  ], legenda: (nomeMes, 'média'), cores: (cor[0], cor[1])),
+            ajuda: ajudaCategorias),
+        _Cartao('Mapa de calor', 'quanto cada dia do mês gastou',
+            _Calor(mes, dia,
+                porDiaIdeal: teto == null ? null : teto / dia.length),
+            ajuda: ajudaCalor),
         _Cartao(
             'Custo por evento',
             '${mes.year} × ${mes.year - 1}',
@@ -120,23 +201,26 @@ class GraficosPage extends StatelessWidget {
                 : _Pares([
                     for (final e in eventos) (e.key, e.value.$1, e.value.$2)
                   ], legenda: ('${mes.year}', '${mes.year - 1}'),
-                    cores: (cor[0], cor[1]))),
+                    cores: (cor[0], cor[1])),
+            ajuda: ajudaEventos),
         _Cartao('Composição por categoria', nomeMes,
-            _Rosca(composicao(doMes), cor)),
+            _Rosca(composicao(doMes), cor),
+            ajuda: ajudaComposicao),
         _Cartao(
             'Por dia da semana',
             'total dos últimos 12 meses',
             _Colunas([for (var i = 0; i < 7; i++) (_diasDaSemana[i], semana[i])],
-                cor: cor[0])),
+                cor: cor[0]),
+            ajuda: ajudaSemana),
       ]),
     );
   }
 }
 
 class _Cartao extends StatelessWidget {
-  final String titulo, sub;
+  final String titulo, sub, ajuda;
   final Widget filho;
-  const _Cartao(this.titulo, this.sub, this.filho);
+  const _Cartao(this.titulo, this.sub, this.filho, {required this.ajuda});
 
   @override
   Widget build(BuildContext context) {
@@ -145,7 +229,26 @@ class _Cartao extends StatelessWidget {
       child: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Text(titulo, style: t.titleMedium),
+          Row(children: [
+            Expanded(child: Text(titulo, style: t.titleMedium)),
+            IconButton(
+              icon: const Icon(Icons.info_outline),
+              tooltip: 'Como ler: $titulo',
+              visualDensity: VisualDensity.compact,
+              onPressed: () => showDialog<void>(
+                context: context,
+                builder: (ctx) => AlertDialog(
+                  title: Text(titulo),
+                  content: SingleChildScrollView(child: Text(ajuda)),
+                  actions: [
+                    TextButton(
+                        onPressed: () => Navigator.pop(ctx),
+                        child: const Text('OK')),
+                  ],
+                ),
+              ),
+            ),
+          ]),
           if (sub.isNotEmpty) Text(sub, style: t.bodySmall),
           const SizedBox(height: 12),
           filho,
@@ -391,20 +494,42 @@ class _RitmoPintor extends CustomPainter {
   bool shouldRepaint(covariant CustomPainter old) => true;
 }
 
-/// Calendário do mês: cada dia na intensidade do gasto (um só tom, do claro
-/// ao escuro). Tocar mostra o valor.
+const _verde = Color(0xFF66BB6A),
+    _amarelo = Color(0xFFFDD835),
+    _vermelho = Color(0xFFE53935);
+
+/// Cor do mapa de calor para [t] de 0 (pouco: verde) a 1 (muito: vermelho),
+/// passando pelo amarelo no meio.
+Color corDoCalor(double t) {
+  final x = t.clamp(0.0, 1.0);
+  return x < 0.5
+      ? Color.lerp(_verde, _amarelo, x * 2)!
+      : Color.lerp(_amarelo, _vermelho, (x - 0.5) * 2)!;
+}
+
+/// Calendário do mês, cada dia de verde (pouco) a vermelho (muito). Com
+/// teto, a régua é o quanto cabe por dia: amarelo = no limite diário,
+/// vermelho = o dobro ou mais. Sem teto, é o dia que mais gastou. Tocar
+/// mostra o valor.
 class _Calor extends StatelessWidget {
   final DateTime mes;
   final List<double> dia;
-  final Color cor;
-  const _Calor(this.mes, this.dia, this.cor);
+  final double? porDiaIdeal;
+  const _Calor(this.mes, this.dia, {this.porDiaIdeal});
 
   @override
   Widget build(BuildContext context) {
     final esquema = Theme.of(context).colorScheme;
     final t = Theme.of(context).textTheme.labelSmall;
     final maxV = dia.reduce(max);
+    // valor que vira vermelho
+    final topo = porDiaIdeal != null ? 2 * porDiaIdeal! : maxV;
     final vazios = DateTime(mes.year, mes.month).weekday % 7;
+    Widget amostra(Color c) => Container(
+        width: 12,
+        height: 12,
+        decoration:
+            BoxDecoration(color: c, borderRadius: BorderRadius.circular(2)));
     return Column(children: [
       Row(children: [
         for (final d in _diasDaSemana)
@@ -427,18 +552,44 @@ class _Calor extends StatelessWidget {
                 decoration: BoxDecoration(
                   color: v <= 0
                       ? esquema.surfaceContainerHighest
-                      : Color.lerp(cor.withValues(alpha: 0.2), cor, v / maxV),
+                      : corDoCalor(topo > 0 ? v / topo : 0),
                   borderRadius: BorderRadius.circular(4),
                 ),
+                // texto escuro: legível no verde, no amarelo e no vermelho
                 child: Text('${i + 1}',
                     style: t?.copyWith(
-                        color: v > 0 && v / maxV > 0.5
-                            ? Colors.white
-                            : esquema.onSurface)),
+                        color: v > 0 ? Colors.black87 : esquema.onSurface)),
               ),
             ),
         ],
       ),
+      const SizedBox(height: 8),
+      // legenda: a escala de cores com o que cada ponta significa
+      Row(children: [
+        amostra(esquema.surfaceContainerHighest),
+        const SizedBox(width: 4),
+        Text('sem gasto', style: t),
+        const SizedBox(width: 12),
+        Text('pouco', style: t),
+        const SizedBox(width: 4),
+        Expanded(
+          child: Container(
+            height: 12,
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(2),
+              gradient: const LinearGradient(
+                  colors: [_verde, _amarelo, _vermelho]),
+            ),
+          ),
+        ),
+        const SizedBox(width: 4),
+        Text('muito', style: t),
+      ]),
+      if (porDiaIdeal != null) ...[
+        const SizedBox(height: 4),
+        Text('amarelo = ${fmtValor(porDiaIdeal!)} por dia (teto ÷ dias)',
+            style: Theme.of(context).textTheme.bodySmall),
+      ],
     ]);
   }
 }

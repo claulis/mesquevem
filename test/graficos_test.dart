@@ -69,6 +69,13 @@ void main() {
     expect(composicao({'': 3, 'x': 0}), [('Sem categoria', 3.0)]);
   });
 
+  test('mapa de calor: verde → amarelo → vermelho', () {
+    expect(corDoCalor(0), const Color(0xFF66BB6A));
+    expect(corDoCalor(0.5), const Color(0xFFFDD835));
+    expect(corDoCalor(1), const Color(0xFFE53935));
+    expect(corDoCalor(3), corDoCalor(1)); // acima do topo: vermelho
+  });
+
   testWidgets('tela de gráficos mostra os 8 e respeita o ocultar valores',
       (tester) async {
     tester.view.physicalSize = const Size(360 * 3, 4000 * 3);
@@ -104,6 +111,15 @@ void main() {
       expect(find.text(t), findsOneWidget, reason: t);
     }
     expect(find.textContaining('1.234,50'), findsWidgets);
+
+    // cada gráfico tem o ⓘ com a explicação
+    expect(find.byIcon(Icons.info_outline), findsNWidgets(8));
+    await tester.tap(find.byTooltip('Como ler: Por dia da semana'));
+    await tester.pumpAndSettle();
+    expect(find.text(ajudaSemana), findsOneWidget);
+    await tester.tap(find.text('OK'));
+    await tester.pumpAndSettle();
+    expect(find.text(ajudaSemana), findsNothing);
 
     valoresOcultos = true;
     addTearDown(() => valoresOcultos = false);

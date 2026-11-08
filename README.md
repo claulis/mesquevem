@@ -16,7 +16,7 @@
 [![SharedPreferences](https://img.shields.io/badge/dados-SharedPreferences-00897B)](https://pub.dev/packages/shared_preferences)
 [![GitHub Actions](https://img.shields.io/badge/CI-GitHub%20Actions-2088FF?logo=githubactions&logoColor=white)](https://github.com/claulis/mesquevem/actions)
 [![Release](https://img.shields.io/github/v/release/claulis/mesquevem?label=vers%C3%A3o&color=009C3B)](https://github.com/claulis/mesquevem/releases/latest)
-[![Testes](https://img.shields.io/badge/testes-162%20passando-brightgreen)](test)
+[![Testes](https://img.shields.io/badge/testes-163%20passando-brightgreen)](test)
 [![Feito com](https://img.shields.io/badge/feito%20com-%E2%98%95%20e%20boletos-FFDF00)](#)
 
 </div>
@@ -49,7 +49,7 @@ Tudo **offline** e no próprio celular. Sem cadastro, sem nuvem, sem ninguém ve
 | 🧢 | **Teto de gastos** | Quanto a família pode gastar no mês, com barra de progresso e a marca do ritmo ideal para hoje |
 | 💡 | **Insights** | Botão 💡 na tela principal com o número de insights no canto, como um contador de notificações. Abre a lista: ritmo do mês, quanto ainda pode gastar por dia, comparação com o mês passado, categorias perto do limite, aniversários chegando (alertas primeiro) |
 | 👁️ | **Ocultar valores** | Botão do olho ao lado do 💡, como nos apps de banco: troca todos os valores por R$ ••••• para tirar print sem expor os gastos. A escolha continua ao reabrir o app |
-| 📊 | **Gráficos** | Botão 📊 na tela principal, para o mês que estiver na tela: últimos 6 meses com o teto e a previsão, ritmo do mês (gasto acumulado contra o ritmo ideal ou o mês anterior), por gastador, categorias contra a média de 3 meses, mapa de calor dos dias, custo por evento (este ano e o anterior), composição por categoria e gasto por dia da semana. Tocar numa barra ou num dia mostra o valor |
+| 📊 | **Gráficos** | Botão 📊 na tela principal, para o mês que estiver na tela: últimos 6 meses com o teto e a previsão, ritmo do mês (gasto acumulado contra o ritmo ideal ou o mês anterior), por gastador, categorias contra a média de 3 meses, mapa de calor dos dias (verde, amarelo e vermelho; com teto, o amarelo é o quanto cabe por dia), custo por evento (este ano e o anterior), composição por categoria e gasto por dia da semana. Tocar numa barra ou num dia mostra o valor, e o ⓘ de cada gráfico explica como lê-lo |
 | 🔮 | **Previsão** | Três métodos estatísticos que se revezam conforme o histórico cresce (veja a seção Previsão de gastos) |
 | 💾 | **Backup e compartilhamento** | Exporta e importa um JSON, ou manda direto pelo WhatsApp, e-mail ou Drive |
 | 🖼️ | **Fundo personalizado** | *"Coloque uma imagem de quem, ou que, te inspira a gastar menos ou de quem, ou que, te faz gastar mais 😄"*. A opacidade da imagem é ajustável de 5% a 100%, com prévia |
@@ -217,7 +217,7 @@ lib/
     ├── graficos/          #   dados dos 8 gráficos (puros) e a tela
     ├── backup/ · config/  #   backup, fundo, teto, atualizar
     └── inicio/            #   carga inicial, tela de erro e abas
-test/                      # 162 testes (unidade e widget)
+test/                      # 163 testes (unidade e widget)
 tool/make_icon.py          # gera o ícone (calendário nas cores do Brasil)
 ```
 
@@ -233,7 +233,7 @@ tool/make_icon.py          # gera o ícone (calendário nas cores do Brasil)
 
 ```bash
 flutter pub get
-flutter test        # 162 testes
+flutter test        # 163 testes
 flutter run         # com um celular ou emulador Android conectado
 ```
 
