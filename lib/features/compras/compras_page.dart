@@ -5,6 +5,7 @@ import '../../core/confirmar.dart';
 import '../../core/format.dart';
 import '../../core/salvar.dart';
 import '../../data/compra.dart';
+import '../../data/divisao.dart';
 import '../../state/privacidade.dart';
 import '../../state/store.dart';
 
@@ -39,13 +40,17 @@ class ComprasPage extends StatelessWidget {
     // '' = Todos; gastador já excluído também volta a Todos
     var gast =
         store.gastadores.any((g) => g.id == c?.gastador) ? c!.gastador : '';
-    String? erroValor;
+    String? erroValor, erroParcelas;
+    // só em gasto novo: parcelas e divisão entre os gastadores marcados
+    final parcelasCampo = TextEditingController(text: '1');
+    final divididos = <String>{};
+    var parcelas = 1;
 
     // o diálogo devolve o valor já validado, ou null se cancelado
     final v = await showDialog<double>(
       context: context,
       builder: (ctx) => DonoDosCampos(
-        campos: [desc, valor],
+        campos: [desc, valor, parcelasCampo],
         builder: (ctx, setD) => AlertDialog(
           title: Text(c == null ? 'Novo gasto' : 'Editar gasto'),
           content: SingleChildScrollView(
@@ -70,6 +75,36 @@ class ComprasPage extends StatelessWidget {
                   (v) => setD(() => cat = v)),
               _drop('Evento', store.categorias(TipoCategoria.evento), ev,
                   (v) => setD(() => ev = v)),
+              if (c == null) ...[
+                TextField(
+                    controller: parcelasCampo,
+                    onChanged: (_) {
+                      if (erroParcelas != null) {
+                        setD(() => erroParcelas = null);
+                      }
+                    },
+                    keyboardType: TextInputType.number,
+                    decoration: InputDecoration(
+                        labelText: 'Parcelas (1 a $maxParcelas)',
+                        helperText: 'O valor é o total; vira uma parcela por mês',
+                        errorText: erroParcelas)),
+                if (store.gastadores.isNotEmpty) ...[
+                  const SizedBox(height: 8),
+                  const Align(
+                      alignment: Alignment.centerLeft,
+                      child: Text('Gastadores (marque mais de um para dividir)')),
+                  for (final g in store.gastadores)
+                    CheckboxListTile(
+                      dense: true,
+                      contentPadding: EdgeInsets.zero,
+                      controlAffinity: ListTileControlAffinity.leading,
+                      title: Text(g.nome),
+                      value: divididos.contains(g.id),
+                      onChanged: (x) => setD(() =>
+                          x == true ? divididos.add(g.id) : divididos.remove(g.id)),
+                    ),
+                ],
+              ] else
               DropdownButtonFormField<String>(
                 isExpanded: true,
                 initialValue: gast,
@@ -106,6 +141,14 @@ class ComprasPage extends StatelessWidget {
             FilledButton(
               onPressed: () {
                 try {
+                  if (c == null) {
+                    final n = int.tryParse(parcelasCampo.text.trim());
+                    if (n == null || n < 1 || n > maxParcelas) {
+                      setD(() => erroParcelas = 'Informe de 1 a $maxParcelas');
+                      return;
+                    }
+                    parcelas = n;
+                  }
                   // valor não mexido: mantém o original, mesmo que hoje
                   // lerValor o recusasse (dados antigos, mais de 2 casas)
                   Navigator.pop(
@@ -126,19 +169,37 @@ class ComprasPage extends StatelessWidget {
     if (v == null || !context.mounted) return;
     // lido já: o diálogo libera o campo quando termina de sair da tela
     final descricao = desc.text.trim();
+    if (c == null) {
+      // ids na ordem da lista de gastadores; excluído no meio do caminho = fora
+      final ids = [
+        for (final g in store.gastadores)
+          if (divididos.contains(g.id)) g.id
+      ];
+      await avisandoFalha(
+          context,
+          () => store.salvarCompras(gerarGastos(
+              data: data,
+              total: v,
+              parcelas: parcelas,
+              gastadores: ids,
+              descricao: descricao,
+              categoria: cat ?? '',
+              evento: ev ?? '')));
+      return;
+    }
     await avisandoFalha(
         context,
         () => store.salvarCompra(
             Compra(
               data,
               v,
-              id: c?.id,
+              id: c.id,
               descricao: descricao,
               categoria: cat ?? '',
               evento: ev ?? '',
               gastador: gast,
             ),
-            edicao: c != null));
+            edicao: true));
   }
 
   /// Linha de um gasto: toque edita, lixeira exclui. Usada também na lista

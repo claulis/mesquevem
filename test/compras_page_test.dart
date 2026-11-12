@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:provider/provider.dart';
 import 'package:compras/data/compra.dart';
+import 'package:compras/data/gastador.dart';
 import 'package:compras/data/repositorio.dart';
 import 'package:compras/features/compras/compras_page.dart';
 import 'package:compras/state/store.dart';
@@ -146,5 +147,52 @@ void main() {
       for (var i = 0; i < 500; i++) Compra(DateTime(2026, 9, 1), i + 1.0)
     ]);
     expect(find.byType(ListTile).evaluate().length, lessThan(50));
+  });
+
+  testWidgets('parcelado e dividido: 3x entre 2 gastadores = 6 gastos',
+      (tester) async {
+    tester.view.physicalSize = const Size(360 * 3, 1200 * 3);
+    tester.view.devicePixelRatio = 3;
+    addTearDown(tester.view.reset);
+    final repo = RepositorioMemoria()
+      ..dados.gastadores.addAll([
+        Gastador('Ana', DateTime(1990), Sexo.f, id: 'a'),
+        Gastador('Bia', DateTime(1992), Sexo.f, id: 'b'),
+      ]);
+    final store = Store(repo);
+    await store.carregar();
+    await tester.pumpWidget(ChangeNotifierProvider.value(
+        value: store, child: const MaterialApp(home: ComprasPage())));
+    await tester.tap(find.byIcon(Icons.add));
+    await tester.pumpAndSettle();
+    await tester.enterText(
+        find.widgetWithText(TextField, 'Parcelas (1 a 48)'), '3');
+    await tester.tap(find.text('Ana'));
+    await tester.tap(find.text('Bia'));
+    await preencherESalvar(tester, '300');
+    expect(store.compras.length, 6);
+    expect(store.compras.every((c) => c.valor == 50), isTrue);
+    expect(store.compras.map((c) => c.gastador).toSet(), {'a', 'b'});
+    expect(repo.salvamentos, 1); // uma gravação só
+  });
+
+  testWidgets('parcelas inválidas mostram o erro e não salvam', (tester) async {
+    final (store, _) = await abrir(tester);
+    await tester.tap(find.byIcon(Icons.add));
+    await tester.pumpAndSettle();
+    await tester.enterText(
+        find.widgetWithText(TextField, 'Parcelas (1 a 48)'), '49');
+    await preencherESalvar(tester, '10');
+    expect(find.text('Informe de 1 a 48'), findsOneWidget);
+    expect(store.compras, isEmpty);
+  });
+
+  testWidgets('editar um gasto não mostra parcelas nem checkboxes',
+      (tester) async {
+    await abrir(tester, compras: [Compra(DateTime(2026, 9, 1), 10, descricao: 'X')]);
+    await tester.tap(find.text('X'));
+    await tester.pumpAndSettle();
+    expect(find.textContaining('Parcelas'), findsNothing);
+    expect(find.byType(CheckboxListTile), findsNothing);
   });
 }

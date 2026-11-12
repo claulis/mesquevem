@@ -46,6 +46,17 @@ Map<String, double> porGastador(
   return r;
 }
 
+/// Como [porGastador], mas no mês corrente só até [agora]: parcelas que
+/// caem mais adiante no mês ainda não foram gastas.
+Map<String, double> porGastadorAte(List<Compra> cs, DateTime mes,
+        String Function(String id) nome, DateTime agora) =>
+    porGastador(
+        (mes.year == agora.year && mes.month == agora.month)
+            ? cs.where((c) => !c.data.isAfter(agora)).toList()
+            : cs,
+        mes,
+        nome);
+
 /// Média mensal por categoria nos [n] meses anteriores a [mes].
 Map<String, double> mediaPorCategoria(List<Compra> cs, DateTime mes,
     {int n = 3}) {

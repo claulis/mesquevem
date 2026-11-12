@@ -53,7 +53,14 @@ const ajudaGastador = 'Quanto cada pessoa da família gastou no mês na '
     'forma justa, lance cada gasto com o gastador certo; um "Todos" grande '
     'esconde quem gastou.';
 
-const ajudaCategorias = 'Para cada categoria, duas barras: a primeira é '
+const ajudaPizzaGastador = 'A pizza mostra a parte de cada pessoa no gasto '
+    'do mês, com o nome, a % e o valor. No mês atual conta só o que já foi '
+    'gasto até hoje; parcelas e gastos com data futura ficam de fora.\n\n'
+    'Como ler: fatia grande = quem mais pesa no mês. "Todos" são os gastos '
+    'lançados sem gastador. Para dividir um gasto entre várias pessoas, marque '
+    'os gastadores ao lançar.';
+
+const ajudaCategorias ='Para cada categoria, duas barras: a primeira é '
     'o gasto no mês na tela e a segunda é a média dos 3 meses anteriores.\n\n'
     'Como ler: primeira barra maior que a segunda = a categoria está acima '
     'do normal neste mês; menor = abaixo. É aqui que se vê onde o mês '
@@ -175,6 +182,12 @@ class GraficosPage extends StatelessWidget {
                 : _Barras([for (final e in gastadores) (e.key, e.value)],
                     cor[0]),
             ajuda: ajudaGastador),
+        _Cartao(
+            'Pizza por gastador',
+            atual ? '$nomeMes · até agora' : nomeMes,
+            _Rosca(composicao(porGastadorAte(cs, mes, store.nomeGastador, hoje)),
+                cor),
+            ajuda: ajudaPizzaGastador),
         _Cartao(
             'Categorias: mês × média',
             'média dos 3 meses anteriores',

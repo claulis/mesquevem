@@ -121,6 +121,11 @@ class Store extends ChangeNotifier {
               ? 'este gasto foi excluído'
               : null);
 
+  /// Adiciona várias compras novas de uma vez (parcelas, divisão): ou entram
+  /// todas ou nenhuma.
+  Future<void> salvarCompras(List<Compra> novas) =>
+      _alterar((d) => d.compras.addAll(novas));
+
   /// Compra que já não existe: nada a fazer.
   Future<void> removerCompra(String id) =>
       _alterar((d) => d.compras.removeWhere((c) => c.id == id),

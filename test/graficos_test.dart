@@ -69,6 +69,15 @@ void main() {
     expect(composicao({'': 3, 'x': 0}), [('Sem categoria', 3.0)]);
   });
 
+  test('porGastadorAte: no mês corrente só conta até agora', () {
+    final agora = DateTime(2026, 10, 2, 12);
+    final r = porGastadorAte(cs, out, (id) => id.isEmpty ? 'Todos' : 'Ana', agora);
+    expect(r, {'Ana': 10, 'Todos': 5}); // o gasto do dia 4 ainda não houve
+    // mês passado: conta tudo
+    final p = porGastadorAte(cs, DateTime(2026, 9), (id) => 'x', agora);
+    expect(p, {'x': 30});
+  });
+
   test('mapa de calor: verde → amarelo → vermelho', () {
     expect(corDoCalor(0), const Color(0xFF66BB6A));
     expect(corDoCalor(0.5), const Color(0xFFFDD835));
@@ -76,7 +85,7 @@ void main() {
     expect(corDoCalor(3), corDoCalor(1)); // acima do topo: vermelho
   });
 
-  testWidgets('tela de gráficos mostra os 8 e respeita o ocultar valores',
+  testWidgets('tela de gráficos mostra os 9 e respeita o ocultar valores',
       (tester) async {
     tester.view.physicalSize = const Size(360 * 3, 4000 * 3);
     tester.view.devicePixelRatio = 3;
@@ -102,6 +111,7 @@ void main() {
       'Últimos 6 meses',
       'Ritmo do mês',
       'Por gastador',
+      'Pizza por gastador',
       'Categorias: mês × média',
       'Mapa de calor',
       'Custo por evento',
@@ -113,7 +123,7 @@ void main() {
     expect(find.textContaining('1.234,50'), findsWidgets);
 
     // cada gráfico tem o ⓘ com a explicação
-    expect(find.byIcon(Icons.info_outline), findsNWidgets(8));
+    expect(find.byIcon(Icons.info_outline), findsNWidgets(9));
     await tester.tap(find.byTooltip('Como ler: Por dia da semana'));
     await tester.pumpAndSettle();
     expect(find.text(ajudaSemana), findsOneWidget);
