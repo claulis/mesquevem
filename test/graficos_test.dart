@@ -104,7 +104,7 @@ void main() {
     expect(corDoCalor(3), corDoCalor(1)); // acima do topo: vermelho
   });
 
-  testWidgets('tela de gráficos mostra os 9 e respeita o ocultar valores',
+  testWidgets('tela de gráficos mostra os 8 e respeita o ocultar valores',
       (tester) async {
     tester.view.physicalSize = const Size(360 * 3, 4000 * 3);
     tester.view.devicePixelRatio = 3;
@@ -129,8 +129,7 @@ void main() {
     for (final t in [
       'Últimos 6 meses',
       'Ritmo do mês',
-      'Por gastador',
-      'Pizza por gastador',
+      'Gasto por pessoa',
       'Categorias: mês × média',
       'Mapa de calor',
       'Custo por evento',
@@ -143,7 +142,7 @@ void main() {
     expect(find.text('Total: R\$ 1.234,50'), findsOneWidget);
 
     // cada gráfico tem o ⓘ com a explicação
-    expect(find.byIcon(Icons.info_outline), findsNWidgets(9));
+    expect(find.byIcon(Icons.info_outline), findsNWidgets(8));
     await tester.tap(find.byTooltip('Como ler: Por dia da semana'));
     await tester.pumpAndSettle();
     expect(find.text(ajudaSemana), findsOneWidget);

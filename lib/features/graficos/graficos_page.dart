@@ -46,13 +46,6 @@ const ajudaRitmo = 'A linha cheia é o gasto somado dia a dia no mês: no '
     'ideal (ou que o mês passado); abaixo = dentro do ritmo. Degraus altos '
     'são dias de gasto grande.';
 
-const ajudaGastador = 'Quanto cada pessoa da família gastou no mês na '
-    'tela, do maior para o menor. "Todos" são os gastos lançados sem '
-    'gastador.\n\n'
-    'Como ler: mostra quem mais pesa no orçamento do mês. Para comparar de '
-    'forma justa, lance cada gasto com o gastador certo; um "Todos" grande '
-    'esconde quem gastou.';
-
 const ajudaPizzaGastador = 'Em cima, o total gasto no mês por todos. A pizza '
     'mostra a parte de cada pessoa nesse total, com o nome, a % e o valor. No '
     'mês atual conta só o que já foi gasto até agora, desde o dia 1; parcelas '
@@ -142,9 +135,6 @@ class GraficosPage extends StatelessWidget {
             'mês anterior'
           );
 
-    final gastadores = porGastador(cs, mes, store.nomeGastador).entries.toList()
-      ..sort((a, b) => b.value.compareTo(a.value));
-
     final doMes = gastoDoMes(cs, mes).porCategoria;
     final media = mediaPorCategoria(cs, mes);
     final cats = {...doMes.keys, ...media.keys}.toList()
@@ -176,15 +166,7 @@ class GraficosPage extends StatelessWidget {
                 dias: dia.length, cor: cor[0], rotuloRef: rotuloRef),
             ajuda: ajudaRitmo),
         _Cartao(
-            'Por gastador',
-            nomeMes,
-            gastadores.isEmpty
-                ? _semDados
-                : _Barras([for (final e in gastadores) (e.key, e.value)],
-                    cor[0]),
-            ajuda: ajudaGastador),
-        _Cartao(
-            'Pizza por gastador',
+            'Gasto por pessoa',
             atual ? '$nomeMes · até agora' : nomeMes,
             Builder(builder: (context) {
               final fatias = composicao(rateioPorGastador(cs, mes,
@@ -385,31 +367,6 @@ Widget _barra(double v, double maxV, Color cor, {double alto = 14}) =>
           decoration: BoxDecoration(
               color: cor, borderRadius: BorderRadius.circular(4))),
     );
-
-/// Barras horizontais: nome, barra e valor.
-class _Barras extends StatelessWidget {
-  final List<(String, double)> itens;
-  final Color cor;
-  const _Barras(this.itens, this.cor);
-
-  @override
-  Widget build(BuildContext context) {
-    final maxV = itens.map((e) => e.$2).reduce(max);
-    return Column(children: [
-      for (final (n, v) in itens)
-        Padding(
-          padding: const EdgeInsets.symmetric(vertical: 4),
-          child: Row(children: [
-            SizedBox(
-                width: 88, child: Text(n, overflow: TextOverflow.ellipsis)),
-            Expanded(child: _barra(v, maxV, cor)),
-            const SizedBox(width: 8),
-            Text(fmtValor(v), style: Theme.of(context).textTheme.bodySmall),
-          ]),
-        ),
-    ]);
-  }
-}
 
 /// Dois valores por nome (este mês × média, este ano × anterior).
 class _Pares extends StatelessWidget {
