@@ -2,6 +2,7 @@ import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../core/format.dart';
+import '../../data/divisao.dart';
 import '../../state/fundo.dart';
 import '../../state/privacidade.dart';
 import '../../state/store.dart';
@@ -218,8 +219,17 @@ class _HomePageState extends State<HomePage> {
             .map((c) =>
                 (c.data.year - hoje.year) * 12 + c.data.month - hoje.month)
             .reduce(min);
+    // para a frente: até o mês da última parcela já lançada (no máximo o
+    // número de parcelas aceito, contra datas absurdas de backup)
+    final ultimo = store.compras.isEmpty
+        ? 0
+        : store.compras
+            .map((c) =>
+                (c.data.year - hoje.year) * 12 + c.data.month - hoje.month)
+            .reduce(max);
     final podeVoltar = _desloc > max(primeiro, -janelaMeses);
-    final podeAvancar = _desloc < 0;
+    final podeAvancar = _desloc < ultimo.clamp(0, maxParcelas);
+    final futuro = _desloc > 0;
     void irPara(int d) => setState(() => _desloc = d);
     final teto = store.teto;
     // opcional: os testes montam o app sem ele
@@ -316,7 +326,12 @@ class _HomePageState extends State<HomePage> {
                                     : null,
                               ),
                             ]),
-                            Text(mesAtual ? 'Gasto até agora' : 'Gasto no mês',
+                            Text(
+                                mesAtual
+                                    ? 'Gasto até agora'
+                                    : futuro
+                                        ? 'Já lançado no mês'
+                                        : 'Gasto no mês',
                                 textAlign: TextAlign.center),
                             Text(fmtValor(mes.total),
                                 textAlign: TextAlign.center,
@@ -331,7 +346,7 @@ class _HomePageState extends State<HomePage> {
                               const SizedBox(height: 8),
                               if (mes.total > teto)
                                 Text(
-                                    '${mesAtual ? 'Teto estourado' : 'Passou do teto'}'
+                                    '${mesAtual ? 'Teto estourado' : futuro ? 'Passa do teto' : 'Passou do teto'}'
                                     ' em ${fmtValor(mes.total - teto)}',
                                     textAlign: TextAlign.center,
                                     style: tema.titleSmall
@@ -341,6 +356,11 @@ class _HomePageState extends State<HomePage> {
                                     'Pode gastar '
                                     '${fmtValor(porDiaAteOFim(mes.total, teto, hoje))} '
                                     'por dia até o fim do mês',
+                                    textAlign: TextAlign.center,
+                                    style: tema.titleSmall)
+                              else if (futuro)
+                                Text(
+                                    'Sobram ${fmtValor(teto - mes.total)} do teto',
                                     textAlign: TextAlign.center,
                                     style: tema.titleSmall)
                               else

@@ -4,6 +4,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:provider/provider.dart';
 import 'package:compras/core/format.dart';
 import 'package:compras/data/compra.dart';
+import 'package:compras/data/divisao.dart';
 import 'package:compras/data/gastador.dart';
 import 'package:compras/data/repositorio.dart';
 import 'package:compras/features/previsao/home_page.dart';
@@ -235,5 +236,33 @@ void main() {
         find.byKey(const Key('cartaoMes')), const Offset(-400, 0), 1000);
     await tester.pumpAndSettle();
     expect(find.text(nome(hoje)), findsOneWidget);
+  });
+
+  testWidgets('home: avança até o mês da última parcela', (tester) async {
+    tester.view.physicalSize = const Size(800, 3000);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    final hoje = DateTime.now();
+    await tester.runAsync(() async {
+      await store.definirTeto(50);
+      await store.salvarCompras(
+          gerarGastos(data: hoje, total: 90, parcelas: 3));
+    });
+    await tester.pumpWidget(ChangeNotifierProvider.value(
+        value: store, child: const MaterialApp(home: HomePage())));
+    IconButton seta(String dica) => tester.widget<IconButton>(find.ancestor(
+        of: find.byTooltip(dica), matching: find.byType(IconButton)));
+    String nome(DateTime d) => '${meses[d.month - 1]} de ${d.year}';
+
+    for (final i in [1, 2]) {
+      expect(seta('Próximo mês').onPressed, isNotNull, reason: 'parcela $i');
+      await tester.tap(find.byTooltip('Próximo mês'));
+      await tester.pump();
+      expect(find.text(nome(DateTime(hoje.year, hoje.month + i))),
+          findsOneWidget);
+      expect(find.text('Já lançado no mês'), findsOneWidget);
+      expect(find.text('Sobram R\$ 20,00 do teto'), findsOneWidget);
+    }
+    expect(seta('Próximo mês').onPressed, isNull, reason: 'última parcela');
   });
 }

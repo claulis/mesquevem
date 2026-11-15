@@ -195,4 +195,45 @@ void main() {
     expect(find.textContaining('Parcelas'), findsNothing);
     expect(find.byType(CheckboxListTile), findsNothing);
   });
+
+  testWidgets('"Todos" marca todos os gastadores e rateia entre eles',
+      (tester) async {
+    tester.view.physicalSize = const Size(360 * 3, 1400 * 3);
+    tester.view.devicePixelRatio = 3;
+    addTearDown(tester.view.reset);
+    final repo = RepositorioMemoria()
+      ..dados.gastadores.addAll([
+        Gastador('Ana', DateTime(1990), Sexo.f, id: 'a'),
+        Gastador('Bia', DateTime(1992), Sexo.f, id: 'b'),
+        Gastador('Caio', DateTime(1994), Sexo.m, id: 'c'),
+      ]);
+    final store = Store(repo);
+    await store.carregar();
+    await tester.pumpWidget(ChangeNotifierProvider.value(
+        value: store, child: const MaterialApp(home: ComprasPage())));
+    await tester.tap(find.byIcon(Icons.add));
+    await tester.pumpAndSettle();
+    bool? marcado(String t) => tester
+        .widget<CheckboxListTile>(find.widgetWithText(CheckboxListTile, t))
+        .value;
+    await tester.tap(find.text('Todos'));
+    await tester.pump();
+    expect([for (final n in ['Ana', 'Bia', 'Caio']) marcado(n)],
+        [true, true, true]);
+    await tester.tap(find.text('Bia'));
+    await tester.pump();
+    expect(marcado('Todos'), isNull, reason: 'parte marcada: traço');
+    await tester.tap(find.text('Todos')); // completa
+    await tester.pump();
+    await tester.tap(find.text('Todos')); // desmarca todos
+    await tester.pump();
+    expect(marcado('Ana'), isFalse);
+    await tester.tap(find.text('Todos'));
+    await tester.enterText(
+        find.widgetWithText(TextField, 'Parcelas (1 a 48)'), '2');
+    await preencherESalvar(tester, '60');
+    expect(store.compras.length, 6);
+    expect(store.compras.every((c) => c.valor == 10), isTrue);
+    expect(store.compras.map((c) => c.gastador).toSet(), {'a', 'b', 'c'});
+  });
 }

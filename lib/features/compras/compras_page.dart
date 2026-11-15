@@ -92,7 +92,31 @@ class ComprasPage extends StatelessWidget {
                   const SizedBox(height: 8),
                   const Align(
                       alignment: Alignment.centerLeft,
-                      child: Text('Gastadores (marque mais de um para dividir)')),
+                      child: Text(
+                          'Gastadores (marque "Todos" ou mais de um para dividir)')),
+                  if (store.gastadores.length > 1)
+                    CheckboxListTile(
+                      dense: true,
+                      contentPadding: EdgeInsets.zero,
+                      controlAffinity: ListTileControlAffinity.leading,
+                      tristate: true,
+                      title: const Text('Todos'),
+                      // parte marcada: traço
+                      value: divididos.isEmpty
+                          ? false
+                          : store.gastadores
+                                  .every((g) => divididos.contains(g.id))
+                              ? true
+                              : null,
+                      onChanged: (_) => setD(() {
+                        final todos = store.gastadores
+                            .every((g) => divididos.contains(g.id));
+                        divididos.clear();
+                        if (!todos) {
+                          divididos.addAll(store.gastadores.map((g) => g.id));
+                        }
+                      }),
+                    ),
                   for (final g in store.gastadores)
                     CheckboxListTile(
                       dense: true,

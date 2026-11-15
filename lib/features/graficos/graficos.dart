@@ -1,5 +1,6 @@
 import '../../core/format.dart';
 import '../../data/compra.dart';
+import '../../data/divisao.dart';
 import '../previsao/resumo.dart';
 
 // Dados dos gráficos: funções puras (sem Flutter), cobertas por testes.
@@ -56,6 +57,27 @@ Map<String, double> porGastadorAte(List<Compra> cs, DateTime mes,
             : cs,
         mes,
         nome);
+
+/// Como [porGastadorAte], mas o gasto sem gastador ("Todos") é dividido em
+/// partes iguais entre [ids] (os gastadores cadastrados, na ordem da lista):
+/// a pizza fica só com pessoas. Sem gastadores, "Todos" continua.
+Map<String, double> rateioPorGastador(List<Compra> cs, DateTime mes,
+    List<String> ids, String Function(String id) nome, DateTime agora) {
+  final porId = porGastadorAte(cs, mes, (id) => id, agora);
+  final semDono = porId.remove('') ?? 0;
+  if (ids.isEmpty) {
+    if (semDono > 0) porId[''] = semDono;
+  } else if (semDono > 0) {
+    for (final (i, c) in partes((semDono * 100).round(), ids.length).indexed) {
+      porId[ids[i]] = ((porId[ids[i]] ?? 0) * 100 + c).round() / 100;
+    }
+  }
+  final r = <String, double>{};
+  for (final MapEntry(:key, :value) in porId.entries) {
+    r[nome(key)] = (r[nome(key)] ?? 0) + value;
+  }
+  return r;
+}
 
 /// Média mensal por categoria nos [n] meses anteriores a [mes].
 Map<String, double> mediaPorCategoria(List<Compra> cs, DateTime mes,

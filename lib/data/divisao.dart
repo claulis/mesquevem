@@ -6,7 +6,7 @@ const maxParcelas = 48;
 
 /// [cents] repartidos em [n] partes; os centavos que sobram vão, um a um, para
 /// as primeiras (a soma das partes é sempre [cents]).
-List<int> _partes(int cents, int n) =>
+List<int> partes(int cents, int n) =>
     [for (var i = 0; i < n; i++) cents ~/ n + (i < cents % n ? 1 : 0)];
 
 /// Gastos de uma compra parcelada e/ou dividida: [parcelas] meses a partir de
@@ -25,10 +25,10 @@ List<Compra> gerarGastos({
     throw ArgumentError.value(parcelas, 'parcelas', 'entre 1 e $maxParcelas');
   }
   final donos = gastadores.isEmpty ? [''] : gastadores;
-  final porParcela = _partes((total * 100).round(), parcelas);
+  final porParcela = partes((total * 100).round(), parcelas);
   return [
     for (var p = 0; p < parcelas; p++)
-      for (final (g, centavos) in _partes(porParcela[p], donos.length)
+      for (final (g, centavos) in partes(porParcela[p], donos.length)
           .indexed
           .map((e) => (donos[e.$1], e.$2)))
         Compra(

@@ -78,6 +78,25 @@ void main() {
     expect(p, {'x': 30});
   });
 
+  test('rateioPorGastador: "Todos" dividido igual entre as pessoas', () {
+    final agora = DateTime(2026, 10, 31, 23);
+    final x = [
+      Compra(DateTime(2026, 10, 1), 10, gastador: 'a'),
+      Compra(DateTime(2026, 10, 2), 100), // sem gastador
+      Compra(DateTime(2026, 10, 3), 0.01), // centavo que sobra vai para a 1ª
+      Compra(DateTime(2026, 9, 3), 999, gastador: 'b'), // outro mês
+    ];
+    String nome(String id) => {'a': 'Ana', 'b': 'Bia'}[id] ?? 'Todos';
+    final r = rateioPorGastador(x, out, ['a', 'b'], nome, agora);
+    expect(r, {'Ana': 60.01, 'Bia': 50});
+    // sem gastadores: continua "Todos"
+    expect(rateioPorGastador(x, out, [], nome, agora),
+        {'Ana': 10, 'Todos': 100.01});
+    // mês corrente: o que ainda não foi gasto fica de fora
+    expect(rateioPorGastador(x, out, ['a', 'b'], nome, DateTime(2026, 10, 1, 12)),
+        {'Ana': 10});
+  });
+
   test('mapa de calor: verde → amarelo → vermelho', () {
     expect(corDoCalor(0), const Color(0xFF66BB6A));
     expect(corDoCalor(0.5), const Color(0xFFFDD835));
@@ -121,6 +140,7 @@ void main() {
       expect(find.text(t), findsOneWidget, reason: t);
     }
     expect(find.textContaining('1.234,50'), findsWidgets);
+    expect(find.text('Total: R\$ 1.234,50'), findsOneWidget);
 
     // cada gráfico tem o ⓘ com a explicação
     expect(find.byIcon(Icons.info_outline), findsNWidgets(9));

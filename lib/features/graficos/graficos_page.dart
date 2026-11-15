@@ -53,12 +53,13 @@ const ajudaGastador = 'Quanto cada pessoa da família gastou no mês na '
     'forma justa, lance cada gasto com o gastador certo; um "Todos" grande '
     'esconde quem gastou.';
 
-const ajudaPizzaGastador = 'A pizza mostra a parte de cada pessoa no gasto '
-    'do mês, com o nome, a % e o valor. No mês atual conta só o que já foi '
-    'gasto até hoje; parcelas e gastos com data futura ficam de fora.\n\n'
-    'Como ler: fatia grande = quem mais pesa no mês. "Todos" são os gastos '
-    'lançados sem gastador. Para dividir um gasto entre várias pessoas, marque '
-    'os gastadores ao lançar.';
+const ajudaPizzaGastador = 'Em cima, o total gasto no mês por todos. A pizza '
+    'mostra a parte de cada pessoa nesse total, com o nome, a % e o valor. No '
+    'mês atual conta só o que já foi gasto até agora, desde o dia 1; parcelas '
+    'e gastos com data futura ficam de fora.\n\n'
+    'Os gastos lançados sem gastador ("Todos") são divididos em partes iguais '
+    'entre as pessoas cadastradas. Para dividir um gasto só entre algumas, '
+    'marque os gastadores ao lançar.';
 
 const ajudaCategorias ='Para cada categoria, duas barras: a primeira é '
     'o gasto no mês na tela e a segunda é a média dos 3 meses anteriores.\n\n'
@@ -185,8 +186,22 @@ class GraficosPage extends StatelessWidget {
         _Cartao(
             'Pizza por gastador',
             atual ? '$nomeMes · até agora' : nomeMes,
-            _Rosca(composicao(porGastadorAte(cs, mes, store.nomeGastador, hoje)),
-                cor),
+            Builder(builder: (context) {
+              final fatias = composicao(rateioPorGastador(cs, mes,
+                  [for (final g in store.gastadores) g.id],
+                  store.nomeGastador, hoje));
+              final total = fatias.fold(0.0, (s, f) => s + f.$2);
+              return Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    if (fatias.isNotEmpty) ...[
+                      Text('Total: ${fmtValor(total)}',
+                          style: Theme.of(context).textTheme.titleSmall),
+                      const SizedBox(height: 8),
+                    ],
+                    _Rosca(fatias, cor),
+                  ]);
+            }),
             ajuda: ajudaPizzaGastador),
         _Cartao(
             'Categorias: mês × média',
