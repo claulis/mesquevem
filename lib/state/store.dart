@@ -4,6 +4,7 @@ import 'package:flutter/foundation.dart';
 import '../core/erros.dart';
 import '../data/compra.dart';
 import '../data/gastador.dart';
+import '../data/recorrente.dart';
 import '../data/repositorio.dart';
 
 enum TipoCategoria {
@@ -42,6 +43,7 @@ class Store extends ChangeNotifier {
       UnmodifiableMapView(_limites(_d, t));
   List<Gastador> get gastadores => UnmodifiableListView(_d.gastadores);
   double? get teto => _d.teto;
+  List<Recorrente> get recorrentes => UnmodifiableListView(_d.recorrentes);
 
   /// Nome para mostrar do gastador de uma compra ("Todos" se vazio ou excluído).
   String nomeGastador(String id) =>
@@ -54,7 +56,10 @@ class Store extends ChangeNotifier {
         _ordenar(d);
         _d = d;
         notifyListeners();
-      });
+      })
+          // falha ao gravar os lançamentos não impede abrir o app: os gastos
+          // ficam para a próxima abertura (o recorrente não avançou)
+          .then((_) => lancarRecorrentes().catchError((_) {}));
 
   /// Todos os dados (compras e categorias) no formato do backup. Espera os
   /// salvamentos pendentes, para exportar só o que já está gravado.
@@ -209,6 +214,43 @@ class Store extends ChangeNotifier {
           }
         }
       }, semEfeito: () => !_d.gastadores.any((g) => g.id == id));
+
+  /// Insere ou substitui pelo id. Com [edicao], o recorrente tem de existir.
+  /// Um novo cujo dia é hoje já lança o gasto.
+  Future<void> salvarRecorrente(Recorrente r, {bool edicao = false}) =>
+      _alterar((d) {
+        final i = d.recorrentes.indexWhere((x) => x.id == r.id);
+        if (i < 0) {
+          d.recorrentes.add(r);
+        } else {
+          d.recorrentes[i] = r;
+        }
+      },
+          recusa: () => edicao && !_d.recorrentes.any((x) => x.id == r.id)
+              ? 'este gasto recorrente foi excluído'
+              : null).then((_) => lancarRecorrentes());
+
+  /// Os gastos já lançados por ele ficam.
+  Future<void> removerRecorrente(String id) =>
+      _alterar((d) => d.recorrentes.removeWhere((r) => r.id == id),
+          semEfeito: () => !_d.recorrentes.any((r) => r.id == id));
+
+  /// Lança os gastos recorrentes cujo dia já chegou (inclusive meses
+  /// atrasados) numa gravação só; nada a lançar não grava.
+  Future<void> lancarRecorrentes([DateTime? hoje]) {
+    late List<Compra> gastos;
+    late List<Recorrente> novos;
+    return _alterar((d) {
+      d.compras.addAll(gastos);
+      d.recorrentes
+        ..clear()
+        ..addAll(novos);
+    }, semEfeito: () {
+      (gastos, novos) = lancar(_d.recorrentes,
+          {for (final g in _d.gastadores) g.id}, hoje ?? DateTime.now());
+      return gastos.isEmpty;
+    });
+  }
 
   /// null remove o teto.
   Future<void> definirTeto(double? valor) =>

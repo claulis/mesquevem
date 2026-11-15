@@ -10,6 +10,7 @@ import '../categorias/categoria_page.dart';
 import '../gastadores/gastadores_page.dart';
 import 'atualizar_page.dart';
 import 'fundo_page.dart';
+import 'recorrentes_page.dart';
 
 class ConfigPage extends StatelessWidget {
   const ConfigPage({super.key});
@@ -94,6 +95,12 @@ class ConfigPage extends StatelessWidget {
           leading: const Icon(Icons.people),
           title: const Text('Gastadores'),
           onTap: () => abrir(const GastadoresPage()),
+        ),
+        ListTile(
+          leading: const Icon(Icons.event_repeat),
+          title: const Text('Gastos recorrentes'),
+          subtitle: const Text('Lançados sozinhos todo mês'),
+          onTap: () => abrir(const RecorrentesPage()),
         ),
         const Divider(),
         ListTile(

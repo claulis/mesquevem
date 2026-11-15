@@ -18,12 +18,22 @@ class InicioPage extends StatefulWidget {
 class _InicioPageState extends State<InicioPage> {
   late final Store _store;
   late Future<void> _carga;
+  // app aberto em segundo plano quando o dia de um recorrente chega
+  late final AppLifecycleListener _ciclo;
 
   @override
   void initState() {
     super.initState();
     _store = context.read<Store>();
     _carga = _store.carregar();
+    _ciclo = AppLifecycleListener(
+        onResume: () => _store.lancarRecorrentes().catchError((_) {}));
+  }
+
+  @override
+  void dispose() {
+    _ciclo.dispose();
+    super.dispose();
   }
 
   // corpo em bloco: setState não aceita callback que devolve Future

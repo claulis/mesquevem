@@ -6,6 +6,7 @@ import '../../core/format.dart';
 import '../../core/salvar.dart';
 import '../../data/compra.dart';
 import '../../data/divisao.dart';
+import '../../data/recorrente.dart';
 import '../../state/privacidade.dart';
 import '../../state/store.dart';
 
@@ -27,32 +28,48 @@ class ComprasPage extends StatelessWidget {
     );
   }
 
+  /// Formulário de gasto recorrente (novo, ou edição de [r]): o mesmo do
+  /// gasto, com o dia do mês no lugar da data e sem parcelas.
+  static Future<void> formularioRecorrente(BuildContext context,
+          [Recorrente? r]) =>
+      formulario(context, null, true, r);
+
   /// Formulário de nova compra (ou de edição, com [c]). Usado também pelo
-  /// botão "+ Gasto" da tela principal.
-  static Future<void> formulario(BuildContext context, [Compra? c]) async {
+  /// botão "+ Gasto" da tela principal e, com [recorrente], pelos gastos
+  /// recorrentes ([formularioRecorrente]).
+  static Future<void> formulario(BuildContext context,
+      [Compra? c, bool recorrente = false, Recorrente? r]) async {
     final store = context.read<Store>();
-    final desc = TextEditingController(text: c?.descricao);
-    final valorInicial = c == null ? '' : fmtNumero(c.valor);
+    final desc = TextEditingController(text: c?.descricao ?? r?.descricao);
+    final original = c?.valor ?? r?.valor;
+    final valorInicial = original == null ? '' : fmtNumero(original);
     final valor = TextEditingController(text: valorInicial);
     var data = c?.data ?? DateTime.now();
-    String? cat = (c?.categoria ?? '').isEmpty ? null : c!.categoria;
-    String? ev = (c?.evento ?? '').isEmpty ? null : c!.evento;
+    final diaCampo = TextEditingController(text: r == null ? '' : '${r.dia}');
+    String? erroDia;
+    var dia = 1;
+    final categoria = c?.categoria ?? r?.categoria ?? '';
+    final evento = c?.evento ?? r?.evento ?? '';
+    String? cat = categoria.isEmpty ? null : categoria;
+    String? ev = evento.isEmpty ? null : evento;
     // '' = Todos; gastador já excluído também volta a Todos
     var gast =
         store.gastadores.any((g) => g.id == c?.gastador) ? c!.gastador : '';
     String? erroValor, erroParcelas;
     // só em gasto novo: parcelas e divisão entre os gastadores marcados
     final parcelasCampo = TextEditingController(text: '1');
-    final divididos = <String>{};
+    final divididos = <String>{...?r?.gastadores};
     var parcelas = 1;
 
     // o diálogo devolve o valor já validado, ou null se cancelado
     final v = await showDialog<double>(
       context: context,
       builder: (ctx) => DonoDosCampos(
-        campos: [desc, valor, parcelasCampo],
+        campos: [desc, valor, parcelasCampo, diaCampo],
         builder: (ctx, setD) => AlertDialog(
-          title: Text(c == null ? 'Novo gasto' : 'Editar gasto'),
+          title: Text(recorrente
+              ? (r == null ? 'Novo gasto recorrente' : 'Editar gasto recorrente')
+              : (c == null ? 'Novo gasto' : 'Editar gasto')),
           content: SingleChildScrollView(
             child: Column(mainAxisSize: MainAxisSize.min, children: [
               TextField(
@@ -76,6 +93,7 @@ class ComprasPage extends StatelessWidget {
               _drop('Evento', store.categorias(TipoCategoria.evento), ev,
                   (v) => setD(() => ev = v)),
               if (c == null) ...[
+                if (!recorrente)
                 TextField(
                     controller: parcelasCampo,
                     onChanged: (_) {
@@ -141,6 +159,18 @@ class ComprasPage extends StatelessWidget {
                 onChanged: (v) => setD(() => gast = v ?? ''),
               ),
               const SizedBox(height: 8),
+              if (recorrente)
+                TextField(
+                    controller: diaCampo,
+                    onChanged: (_) {
+                      if (erroDia != null) setD(() => erroDia = null);
+                    },
+                    keyboardType: TextInputType.number,
+                    decoration: InputDecoration(
+                        labelText: 'Dia do mês (1 a 31)',
+                        helperText: 'Lançado todo mês nesse dia',
+                        errorText: erroDia))
+              else
               OutlinedButton.icon(
                 icon: const Icon(Icons.calendar_today),
                 label: Text(fmtData(data)),
@@ -165,7 +195,14 @@ class ComprasPage extends StatelessWidget {
             FilledButton(
               onPressed: () {
                 try {
-                  if (c == null) {
+                  if (recorrente) {
+                    final n = int.tryParse(diaCampo.text.trim());
+                    if (n == null || n < 1 || n > 31) {
+                      setD(() => erroDia = 'Informe de 1 a 31');
+                      return;
+                    }
+                    dia = n;
+                  } else if (c == null) {
                     final n = int.tryParse(parcelasCampo.text.trim());
                     if (n == null || n < 1 || n > maxParcelas) {
                       setD(() => erroParcelas = 'Informe de 1 a $maxParcelas');
@@ -177,8 +214,8 @@ class ComprasPage extends StatelessWidget {
                   // lerValor o recusasse (dados antigos, mais de 2 casas)
                   Navigator.pop(
                       ctx,
-                      c != null && valor.text == valorInicial
-                          ? c.valor
+                      original != null && valor.text == valorInicial
+                          ? original
                           : lerValor(valor.text));
                 } on FormatException catch (e) {
                   setD(() => erroValor = e.message);
@@ -199,6 +236,20 @@ class ComprasPage extends StatelessWidget {
         for (final g in store.gastadores)
           if (divididos.contains(g.id)) g.id
       ];
+      if (recorrente) {
+        await avisandoFalha(
+            context,
+            () => store.salvarRecorrente(
+                Recorrente(dia, v,
+                    r?.proximo ?? Recorrente.inicio(dia, DateTime.now()),
+                    id: r?.id,
+                    descricao: descricao,
+                    categoria: cat ?? '',
+                    evento: ev ?? '',
+                    gastadores: ids),
+                edicao: r != null));
+        return;
+      }
       await avisandoFalha(
           context,
           () => store.salvarCompras(gerarGastos(

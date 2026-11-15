@@ -2,13 +2,14 @@ import 'dart:convert';
 import '../core/erros.dart';
 import 'compra.dart';
 import 'gastador.dart';
+import 'recorrente.dart';
 
 /// Maior valor aceito num backup importado (ver [Dados.deTexto]).
 const valorMaximoBackup = 1e300;
 
 /// Versão do formato JSON (armazenamento interno e arquivo de backup).
 /// Mudou o formato? Suba este número e acrescente um `if (v < N)` em [Dados._migrar].
-const versaoAtual = 3;
+const versaoAtual = 4;
 
 class Dados {
   final List<Compra> compras;
@@ -17,6 +18,7 @@ class Dados {
   /// Limite mensal por nome de categoria; categoria sem limite não aparece.
   final Map<String, double> limCompra, limEvento;
   final List<Gastador> gastadores;
+  final List<Recorrente> recorrentes;
 
   /// Teto de gastos do mês; null = não cadastrado.
   double? teto;
@@ -27,10 +29,12 @@ class Dados {
       Map<String, double>? limCompra,
       Map<String, double>? limEvento,
       List<Gastador>? gastadores,
+      List<Recorrente>? recorrentes,
       this.teto})
       : limCompra = limCompra ?? {},
         limEvento = limEvento ?? {},
-        gastadores = gastadores ?? [];
+        gastadores = gastadores ?? [],
+        recorrentes = recorrentes ?? [];
 
   factory Dados.padrao() => Dados(
         compras: [],
@@ -46,6 +50,7 @@ class Dados {
         'limCompra': limCompra,
         'limEvento': limEvento,
         'gastadores': gastadores,
+        'recorrentes': recorrentes,
         'teto': teto,
       };
 
@@ -84,6 +89,9 @@ class Dados {
         limCompra: _limitesValidos(j['limCompra'], catCompra),
         limEvento: _limitesValidos(j['limEvento'], catEvento),
         gastadores: _gastadoresValidos(j['gastadores']),
+        recorrentes: [
+          for (final r in j['recorrentes'] ?? const []) Recorrente.fromJson(r)
+        ],
         teto: teto,
       );
     } on TypeError {
@@ -110,6 +118,7 @@ class Dados {
     // (~1,8e308). Os dados já salvos no aparelho não passam por aqui.
     for (final v in [
       ...d.compras.map((c) => c.valor),
+      ...d.recorrentes.map((r) => r.valor),
       ...d.limCompra.values,
       ...d.limEvento.values,
       if (d.teto != null) d.teto!,
@@ -177,6 +186,7 @@ class Dados {
       limCompra: Map.of(limCompra),
       limEvento: Map.of(limEvento),
       gastadores: List.of(gastadores),
+      recorrentes: List.of(recorrentes),
       teto: teto);
 
   /// Backup editado à mão pode repetir ids; o Store localiza compras pelo id.
@@ -214,6 +224,7 @@ class Dados {
           {...c as Map<String, dynamic>, 'id': c['id'] ?? 'v1-$i'}
       ];
     }
+    // v4 (recorrentes): campo novo e opcional, como os da v3.
     // v3 (limites, gastadores, teto): campos novos e opcionais, lidos com
     // default em fromJson; nada a converter.
     return j;
