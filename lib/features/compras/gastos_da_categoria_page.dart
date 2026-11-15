@@ -1,17 +1,26 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../core/format.dart';
+import '../../data/compra.dart';
 import '../../state/privacidade.dart';
 import '../../state/store.dart';
 import 'compras_page.dart';
 
-/// Gastos de uma categoria (ou evento), aberta pelo toque na tela principal:
-/// os do mês que estava na tela ou, no segundo botão, os de todos os meses.
+/// Gastos de uma categoria, evento ou gastador, aberta pelo toque na tela
+/// principal: os do mês que estava na tela ou, no segundo botão, os de todos
+/// os meses.
 class GastosDaCategoriaPage extends StatefulWidget {
-  final TipoCategoria tipo;
   final String nome;
   final DateTime mes;
-  const GastosDaCategoriaPage(this.tipo, this.nome, this.mes, {super.key});
+  final bool Function(Compra) pertence;
+  GastosDaCategoriaPage(TipoCategoria tipo, this.nome, this.mes, {super.key})
+      : pertence = ((c) =>
+            (tipo == TipoCategoria.compra ? c.categoria : c.evento) == nome);
+
+  /// Gastos do gastador [id] ('' = "Todos", os sem gastador).
+  GastosDaCategoriaPage.doGastador(String id, this.nome, this.mes,
+      {super.key})
+      : pertence = ((c) => c.gastador == id);
 
   @override
   State<GastosDaCategoriaPage> createState() => _GastosDaCategoriaPageState();
@@ -27,8 +36,7 @@ class _GastosDaCategoriaPageState extends State<GastosDaCategoriaPage> {
     final m = widget.mes;
     final lista = store.compras
         .where((c) =>
-            (widget.tipo == TipoCategoria.compra ? c.categoria : c.evento) ==
-                widget.nome &&
+            widget.pertence(c) &&
             (_todos || (c.data.year == m.year && c.data.month == m.month)))
         .toList();
     final total = lista.fold(0.0, (s, c) => s + c.valor);

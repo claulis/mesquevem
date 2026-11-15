@@ -201,6 +201,55 @@ void main() {
     expect(find.text('Natal'), findsNothing);
   });
 
+  testWidgets('home: 3 painéis sanfona; por gastador abre os gastos',
+      (tester) async {
+    tester.view.physicalSize = const Size(800, 3000);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    final hoje = DateTime.now();
+    final ana = Gastador('Ana', DateTime(2015), Sexo.f);
+    final bia = Gastador('Bia', DateTime(2010), Sexo.f);
+    await tester.runAsync(() async {
+      await store.salvarGastador(ana);
+      await store.salvarGastador(bia);
+      await store.salvarCompra(Compra(hoje, 20, gastador: bia.id));
+      await store.salvarCompra(Compra(hoje, 30, gastador: ana.id));
+      await store.salvarCompra(Compra(hoje, 10, descricao: 'pão'));
+    });
+    await tester.pumpWidget(ChangeNotifierProvider.value(
+        value: store, child: const MaterialApp(home: HomePage())));
+
+    for (final t in ['Por categoria', 'Por evento', 'Por gastador']) {
+      expect(find.text(t), findsOneWidget);
+    }
+    // evento sem gasto: painel fica, vazio
+    expect(find.text('Nenhum gasto no mês'), findsOneWidget);
+    expect(find.text(fmtValor(30)), findsOneWidget);
+    expect(find.text(fmtValor(20)), findsOneWidget);
+    expect(find.text('Todos'), findsOneWidget);
+    // maior primeiro
+    expect(tester.getTopLeft(find.text('Ana')).dy,
+        lessThan(tester.getTopLeft(find.text('Bia')).dy));
+
+    await tester.tap(find.text('Ana'));
+    await tester.pumpAndSettle();
+    expect(find.text('1 gasto · ${fmtValor(30)}'), findsOneWidget);
+    await tester.pageBack();
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('Todos'));
+    await tester.pumpAndSettle();
+    expect(find.text('1 gasto · ${fmtValor(10)}'), findsOneWidget);
+    expect(find.text('pão'), findsOneWidget);
+    await tester.pageBack();
+    await tester.pumpAndSettle();
+
+    // fecha a sanfona
+    await tester.tap(find.text('Por gastador'));
+    await tester.pumpAndSettle();
+    expect(find.text('Ana'), findsNothing);
+  });
+
   testWidgets('home: setas e deslizar mostram meses anteriores',
       (tester) async {
     tester.view.physicalSize = const Size(800, 3000);

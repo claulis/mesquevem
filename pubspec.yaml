@@ -1,7 +1,7 @@
 name: compras
 description: "Mês que Vem: registro de compras da família com previsão do mês seguinte"
 publish_to: none
-version: 2.0.2+1
+version: 2.0.3+1
 
 environment:
   sdk: ">=3.4.0 <4.0.0"

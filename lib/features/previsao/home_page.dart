@@ -9,6 +9,7 @@ import '../../state/store.dart';
 import '../compras/compras_page.dart';
 import '../compras/gastos_da_categoria_page.dart';
 import '../config/config_page.dart';
+import '../graficos/graficos.dart';
 import '../graficos/graficos_page.dart';
 import 'insights.dart';
 import 'insights_page.dart';
@@ -83,20 +84,31 @@ class HomePage extends StatefulWidget {
     );
   }
 
-  /// Seção "Por categoria"/"Por evento": as com gasto no mês, da maior para
+  /// Painel sanfona com o total do mês à direita; vazio, "Nenhum gasto no
+  /// mês". Começa aberto.
+  static Widget _painel(BuildContext context, String titulo, double total,
+          List<Widget> itens) =>
+      ExpansionTile(
+        initiallyExpanded: true,
+        tilePadding: EdgeInsets.zero,
+        title: Text(titulo, style: Theme.of(context).textTheme.titleSmall),
+        subtitle: Text(fmtValor(total)),
+        children: itens.isEmpty
+            ? const [ListTile(dense: true, title: Text('Nenhum gasto no mês'))]
+            : itens,
+      );
+
+  /// Painel "Por categoria"/"Por evento": as com gasto no mês, da maior para
   /// a menor. As sem gasto ficam recolhidas (categorias) ou somem (eventos,
   /// que só fazem sentido no mês em que acontecem).
-  static List<Widget> _secao(BuildContext context, Store store, String titulo,
+  static Widget _secao(BuildContext context, Store store, String titulo,
       TipoCategoria tipo, Map<String, double> gastos, DateTime mes) {
     double g(String n) => gastos[n] ?? 0;
     final nomes = [...store.categorias(tipo)]
       ..sort((a, b) => g(b).compareTo(g(a)));
     final com = nomes.where((n) => g(n) > 0).toList();
     final sem = nomes.where((n) => g(n) <= 0).toList();
-    if (tipo == TipoCategoria.evento && com.isEmpty) return const [];
-    return [
-      const SizedBox(height: 16),
-      Text(titulo, style: Theme.of(context).textTheme.titleSmall),
+    return _painel(context, titulo, com.fold(0.0, (s, n) => s + g(n)), [
       for (final n in com)
         _categoria(context, tipo, n, g(n), store.limite(tipo, n), mes),
       if (tipo == TipoCategoria.compra && sem.isNotEmpty)
@@ -108,7 +120,32 @@ class HomePage extends StatefulWidget {
               _categoria(context, tipo, n, 0, store.limite(tipo, n), mes),
           ],
         ),
-    ];
+    ]);
+  }
+
+  /// Painel "Por gastador": o lançado para cada um no mês, do maior para o
+  /// menor; os sem gastador numa linha "Todos" (sem rateio, para bater com a
+  /// lista aberta no toque).
+  static Widget _secaoGastador(
+      BuildContext context, Store store, DateTime mes) {
+    final gastos = porGastador(store.compras, mes, (id) => id).entries
+        .where((e) => e.value > 0)
+        .toList()
+      ..sort((a, b) => b.value.compareTo(a.value));
+    return _painel(context, 'Por gastador',
+        gastos.fold(0.0, (s, e) => s + e.value), [
+      for (final MapEntry(key: id, value: v) in gastos)
+        ListTile(
+          dense: true,
+          title: Text(store.nomeGastador(id)),
+          trailing: Text(fmtValor(v)),
+          onTap: () => Navigator.push(
+              context,
+              MaterialPageRoute(
+                  builder: (_) => GastosDaCategoriaPage.doGastador(
+                      id, store.nomeGastador(id), mes))),
+        ),
+    ]);
   }
 
   /// Gasto do mês sobre o teto, com uma marca no ritmo ideal para hoje
@@ -397,10 +434,12 @@ class _HomePageState extends State<HomePage> {
                         ),
                       ),
                     ),
-                    ...HomePage._secao(context, store, 'Por categoria',
+                    const SizedBox(height: 8),
+                    HomePage._secao(context, store, 'Por categoria',
                         TipoCategoria.compra, mes.porCategoria, visto),
-                    ...HomePage._secao(context, store, 'Por evento',
+                    HomePage._secao(context, store, 'Por evento',
                         TipoCategoria.evento, mes.porEvento, visto),
+                    HomePage._secaoGastador(context, store, visto),
                   ]),
       ),
     );
