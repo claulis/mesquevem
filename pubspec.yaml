@@ -1,7 +1,7 @@
 name: compras
 description: "Mês que Vem: registro de compras da família com previsão do mês seguinte"
 publish_to: none
-version: 2.0.5+1
+version: 2.0.4+1
 
 environment:
   sdk: ">=3.4.0 <4.0.0"
@@ -13,7 +13,6 @@ dependencies:
   flutter:
     sdk: flutter
   flutter_local_notifications: ^22.3.3
-  google_sign_in: ^7.2.0
   path_provider: ^2.1.6
   provider: ^6.1.5+1
   share_plus: ^13.3.1
