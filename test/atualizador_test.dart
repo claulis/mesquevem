@@ -110,7 +110,8 @@ void main() {
           Duration espera = const Duration(milliseconds: 20)}) =>
       Atualizador(
         verificar: () async =>
-            Release(9, 'v1.0.0-9', srv.url, sha256Esperado ?? sha(dados)),
+            Release(9, 'v1.0.0-9', srv.url, sha256Esperado ?? sha(dados),
+                'Pesquisa nos gastos'),
         pasta: () async => pasta,
         instalar: (c) async {
           instalados.add(c);
@@ -167,6 +168,8 @@ void main() {
     final depois = novo();
     await depois.retomarSalvo();
     expect(depois.fase, Fase.pronto);
+    expect(depois.release!.notas, 'Pesquisa nos gastos',
+        reason: 'novidades voltam do ponto salvo');
     expect(srv.pedidos.last, 'bytes=$corte-');
     expect(await apk().readAsBytes(), dados);
     await antes.cancelar();

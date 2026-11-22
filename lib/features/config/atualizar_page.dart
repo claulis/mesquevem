@@ -38,6 +38,12 @@ class AtualizarPage extends StatelessWidget {
         if (r != null && a.temNovaVersao(r)) ...[
           Text('Nova versão ${r.tag} disponível!',
               style: tema.textTheme.titleMedium),
+          if (r.notas.isNotEmpty) ...[
+            const SizedBox(height: 8),
+            Text('Novidades', style: tema.textTheme.titleSmall),
+            const SizedBox(height: 4),
+            Text(r.notas),
+          ],
           const SizedBox(height: 8),
           Text(
               'Seus dados continuam no app. Se quiser, faça um backup antes '

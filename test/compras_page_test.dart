@@ -236,4 +236,42 @@ void main() {
     expect(store.compras.every((c) => c.valor == 10), isTrue);
     expect(store.compras.map((c) => c.gastador).toSet(), {'a', 'b', 'c'});
   });
+
+  testWidgets('pesquisa por nome e gastador, e limpar volta tudo',
+      (tester) async {
+    tester.view.physicalSize = const Size(800, 2000);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    final ana = Gastador('Ana', DateTime(2015), Sexo.f);
+    final repo = RepositorioMemoria()
+      ..dados.gastadores.add(ana)
+      ..dados.compras.addAll([
+        Compra(DateTime(2026, 3, 1), 10, descricao: 'Pão', gastador: ana.id),
+        Compra(DateTime(2026, 3, 2), 7, descricao: 'pão doce'),
+        Compra(DateTime(2026, 3, 3), 40, descricao: 'Cinema'),
+      ]);
+    final store = Store(repo);
+    await store.carregar();
+    await tester.pumpWidget(ChangeNotifierProvider.value(
+        value: store, child: const MaterialApp(home: ComprasPage())));
+
+    await tester.tap(find.byTooltip('Pesquisar'));
+    await tester.pumpAndSettle();
+    await tester.enterText(find.widgetWithText(TextField, 'Nome'), 'pao');
+    await tester.pump();
+    expect(find.text('Cinema'), findsNothing);
+    expect(find.textContaining('2 gastos'), findsOneWidget);
+
+    await tester.tap(find.text('Qualquer gastador'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Ana').last);
+    await tester.pumpAndSettle();
+    expect(find.text('pão doce'), findsNothing);
+    expect(find.textContaining('1 gasto ·'), findsOneWidget);
+
+    await tester.tap(find.text('Limpar filtros'));
+    await tester.pumpAndSettle();
+    expect(find.text('Cinema'), findsOneWidget);
+    expect(find.text('pão doce'), findsOneWidget);
+  });
 }

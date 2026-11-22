@@ -144,7 +144,8 @@ class Atualizador extends ChangeNotifier {
       for (final f in dir.listSync().whereType<File>()) {
         if (!f.path.endsWith('.json')) continue;
         final m = jsonDecode(await f.readAsString()) as Map<String, dynamic>;
-        final r = Release(m['build'], m['tag'], m['apk'], m['sha256']);
+        final r = Release(m['build'], m['tag'], m['apk'], m['sha256'],
+            m['notas'] as String? ?? '');
         // a tag vira nome de arquivo: ponto salvo adulterado é ignorado
         if (!tagValida(r.tag) || !temNovaVersao(r)) continue;
         release = r;
@@ -294,6 +295,7 @@ class Atualizador extends ChangeNotifier {
       'build': r.build,
       'apk': r.apk,
       'sha256': r.sha256,
+      'notas': r.notas,
       'total': 0,
       'etag': null,
     };

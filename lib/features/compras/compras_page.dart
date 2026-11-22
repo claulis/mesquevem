@@ -9,9 +9,13 @@ import '../../data/divisao.dart';
 import '../../data/recorrente.dart';
 import '../../state/privacidade.dart';
 import '../../state/store.dart';
+import 'filtro.dart';
 
-class ComprasPage extends StatelessWidget {
+class ComprasPage extends StatefulWidget {
   const ComprasPage({super.key});
+
+  @override
+  State<ComprasPage> createState() => _ComprasPageState();
 
   static Widget _drop(String rotulo, List<String> opcoes, String? valor,
       ValueChanged<String?> onChanged) {
@@ -309,24 +313,159 @@ class ComprasPage extends StatelessWidget {
         ]),
       );
 
+}
+
+class _ComprasPageState extends State<ComprasPage> {
+  var _pesquisando = false;
+  final _texto = TextEditingController();
+  DateTimeRange? _periodo;
+  String? _evento, _gastador;
+
+  @override
+  void dispose() {
+    _texto.dispose();
+    super.dispose();
+  }
+
+  bool get _filtrando =>
+      _texto.text.trim().isNotEmpty ||
+      _periodo != null ||
+      _evento != null ||
+      _gastador != null;
+
+  void _limpar() => setState(() {
+        _texto.clear();
+        _periodo = null;
+        _evento = null;
+        _gastador = null;
+      });
+
+  /// Filtros da pesquisa: nome, período, evento e gastador, combinados (E).
+  Widget _filtros(Store store) {
+    final eventos = store.categorias(TipoCategoria.evento);
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+      child: Column(children: [
+        TextField(
+          controller: _texto,
+          autofocus: true,
+          decoration: const InputDecoration(
+              labelText: 'Nome', prefixIcon: Icon(Icons.search)),
+          onChanged: (_) => setState(() {}),
+        ),
+        const SizedBox(height: 8),
+        Row(children: [
+          Expanded(
+            child: OutlinedButton.icon(
+              icon: const Icon(Icons.date_range),
+              label: Text(_periodo == null
+                  ? 'Período'
+                  : '${fmtData(_periodo!.start)} – ${fmtData(_periodo!.end)}'),
+              onPressed: () async {
+                final agora = DateTime.now();
+                final p = await showDateRangePicker(
+                    context: context,
+                    firstDate: DateTime(2000),
+                    lastDate: DateTime(agora.year + 5),
+                    initialDateRange: _periodo,
+                    helpText: 'Período (toque 2x num dia para um dia só)');
+                if (p != null) setState(() => _periodo = p);
+              },
+            ),
+          ),
+          if (_periodo != null)
+            IconButton(
+                icon: const Icon(Icons.close),
+                tooltip: 'Limpar período',
+                onPressed: () => setState(() => _periodo = null)),
+        ]),
+        if (eventos.isNotEmpty)
+          DropdownButton<String?>(
+            isExpanded: true,
+            value: eventos.contains(_evento) ? _evento : null,
+            items: [
+              const DropdownMenuItem(value: null, child: Text('Qualquer evento')),
+              for (final e in eventos) DropdownMenuItem(value: e, child: Text(e)),
+            ],
+            onChanged: (v) => setState(() => _evento = v),
+          ),
+        if (store.gastadores.isNotEmpty)
+          DropdownButton<String?>(
+            isExpanded: true,
+            value: _gastador == '' || store.gastadores.any((g) => g.id == _gastador)
+                ? _gastador
+                : null,
+            items: [
+              const DropdownMenuItem(
+                  value: null, child: Text('Qualquer gastador')),
+              const DropdownMenuItem(
+                  value: '', child: Text('Todos (sem gastador)')),
+              for (final g in store.gastadores)
+                DropdownMenuItem(value: g.id, child: Text(g.nome)),
+            ],
+            onChanged: (v) => setState(() => _gastador = v),
+          ),
+        if (_filtrando)
+          Align(
+            alignment: Alignment.centerRight,
+            child: TextButton.icon(
+                icon: const Icon(Icons.filter_alt_off),
+                label: const Text('Limpar filtros'),
+                onPressed: _limpar),
+          ),
+      ]),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     context.watch<Privacidade?>(); // redesenha ao ocultar/mostrar valores
     final store = context.watch<Store>();
-    final compras = store.compras;
+    final ativo = _pesquisando && _filtrando;
+    final compras = ativo
+        ? filtrar(store.compras,
+            texto: _texto.text,
+            periodo: _periodo,
+            evento: _evento,
+            gastador: _gastador)
+        : store.compras;
+    final total = compras.fold(0.0, (s, c) => s + c.valor);
     return Scaffold(
-      appBar: AppBar(title: const Text('Gastos')),
+      appBar: AppBar(title: const Text('Gastos'), actions: [
+        IconButton(
+          icon: Icon(_pesquisando ? Icons.search_off : Icons.search),
+          tooltip: _pesquisando ? 'Fechar pesquisa' : 'Pesquisar',
+          onPressed: () => setState(() => _pesquisando = !_pesquisando),
+        ),
+      ]),
       floatingActionButton: FloatingActionButton(
           heroTag: null, // há outro botão flutuante na aba Início
-          onPressed: () => formulario(context),
+          onPressed: () => ComprasPage.formulario(context),
           child: const Icon(Icons.add)),
-      body: compras.isEmpty
-          ? const Center(child: Text('Toque em + para adicionar'))
-          // builder: só monta as linhas visíveis (lista pode ficar longa)
-          : ListView.builder(
-              itemCount: compras.length,
-              itemBuilder: (context, i) => linha(context, store, compras[i]),
-            ),
+      body: Column(children: [
+        if (_pesquisando) _filtros(store),
+        if (ativo)
+          Padding(
+            padding: const EdgeInsets.only(bottom: 8),
+            child: Text(
+                '${compras.length} ${compras.length == 1 ? 'gasto' : 'gastos'}'
+                ' · ${fmtValor(total)}',
+                style: Theme.of(context).textTheme.titleMedium),
+          ),
+        Expanded(
+          child: compras.isEmpty
+              ? Center(
+                  child: Text(ativo
+                      ? 'Nenhum gasto encontrado'
+                      : 'Toque em + para adicionar'))
+              // builder: só monta as linhas visíveis (lista pode ficar longa)
+              : ListView.builder(
+                  itemCount: compras.length,
+                  itemBuilder: (context, i) =>
+                      ComprasPage.linha(context, store, compras[i]),
+                ),
+        ),
+      ]),
     );
   }
 }

@@ -48,4 +48,4 @@ jobs:
           tag_name: v${{ env.VERSION }}
           name: Mês que Vem v${{ env.VERSION }}
           target_commitish: ${{ github.sha }}
-          generate_release_notes: true
+          body_path: NOVIDADES.md

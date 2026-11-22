@@ -81,6 +81,15 @@ void main() {
         throwsFormatException);
   });
 
+  test('Release lê as novidades do corpo, sem o Full Changelog', () {
+    final j = respostaGitHub('v1.0.0-8')
+      ..['body'] = 'Pesquisa nos gastos.\n\n**Full Changelog**: https://x';
+    expect(Release.deJson(j).notas, 'Pesquisa nos gastos.');
+    expect(Release.deJson(respostaGitHub('v1.0.0-8')).notas, '');
+    expect(notasDe('**Full Changelog**: https://x'), '');
+    expect(notasDe('a' * 3000).length, 2001);
+  });
+
   test('temNova: só com build maior e nunca em build de desenvolvimento', () {
     const r = Release(8, 'v1.0.0-8', 'u');
     expect(temNova(r, atual: 7), isTrue);
@@ -109,6 +118,16 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('Nova versão v1.0.0-8 disponível!'), findsOneWidget);
     expect(find.text('Atualizar agora'), findsOneWidget);
+    expect(find.text('Novidades'), findsNothing, reason: 'sem notas');
+  });
+
+  testWidgets('versão nova mostra as novidades', (tester) async {
+    await abrir(tester,
+        () async => const Release(8, 'v1.0.0-8', 'u', null, 'Pesquisa nova'));
+    await tester.tap(find.text('Verificar atualização'));
+    await tester.pumpAndSettle();
+    expect(find.text('Novidades'), findsOneWidget);
+    expect(find.text('Pesquisa nova'), findsOneWidget);
   });
 
   testWidgets('erro de rede aparece sem prefixo técnico', (tester) async {

@@ -16,7 +16,7 @@
 [![SharedPreferences](https://img.shields.io/badge/dados-SharedPreferences-00897B)](https://pub.dev/packages/shared_preferences)
 [![GitHub Actions](https://img.shields.io/badge/CI-GitHub%20Actions-2088FF?logo=githubactions&logoColor=white)](https://github.com/claulis/mesquevem/actions)
 [![Release](https://img.shields.io/github/v/release/claulis/mesquevem?label=vers%C3%A3o&color=009C3B)](https://github.com/claulis/mesquevem/releases/latest)
-[![Testes](https://img.shields.io/badge/testes-186%20passando-brightgreen)](test)
+[![Testes](https://img.shields.io/badge/testes-192%20passando-brightgreen)](test)
 [![Feito com](https://img.shields.io/badge/feito%20com-%E2%98%95%20e%20boletos-FFDF00)](#)
 
 </div>
@@ -45,6 +45,7 @@ Tudo **offline** e no próprio celular. Sem cadastro, sem nuvem, sem ninguém ve
 | 🧾 | **Parcelado e dividido** | Ao lançar um gasto novo, o campo Parcelas (1 a 48) divide o valor total em um gasto por mês, já registrados nos meses seguintes; marcar mais de um gastador (ou "Todos", que marca todos) divide o valor em partes iguais, um gasto para cada. Na tela principal, as setas avançam até o mês da última parcela |
 | 🔁 | **Gastos recorrentes** | Em Config → Gastos recorrentes, cadastre o que se repete todo mês (aluguel, escola, assinaturas) com o mesmo formulário do gasto, mas com o dia do mês no lugar da data. O gasto é lançado sozinho quando o dia chega; se o app ficar fechado, os meses que faltaram entram na próxima abertura |
 | 👆 | **Gastos da categoria** | Tocar numa categoria ou num evento da tela principal lista os gastos que formam o valor: os do mês na tela ou de todos os meses, com o total. Dá para editar e excluir dali |
+| 🔍 | **Pesquisa nos gastos** | Na aba Gastos, a lupa abre filtros por nome (sem ligar para acento), período, evento e gastador, sozinhos ou combinados; mostra quantos gastos e o total encontrado |
 | 🏷️ | **Categorias com limite** | Limite mensal por categoria, com barra de progresso na tela principal: azul claro e, quando estoura, 🟥 vermelho com o aviso ⚠ "acima do limite". A lista vem da maior para a menor; as sem gasto ficam recolhidas |
 | 🎉 | **Eventos** | Natal, aniversário, viagem… para saber quanto custou aquela festa "simples" |
 | 👨‍👩‍👧 | **Gastadores** | O núcleo familiar (nome, aniversário, sexo). Cada gasto pode ser de alguém ou de **Todos** |
@@ -57,7 +58,7 @@ Tudo **offline** e no próprio celular. Sem cadastro, sem nuvem, sem ninguém ve
 | 🖼️ | **Fundo personalizado** | *"Coloque uma imagem de quem, ou que, te inspira a gastar menos ou de quem, ou que, te faz gastar mais 😄"*. A opacidade da imagem é ajustável de 5% a 100%, com prévia |
 | 🌙 | **Tema escuro** | Segue o modo claro/escuro do celular |
 | 👋 | **Primeiro uso** | Sem nenhum gasto, a tela principal mostra boas-vindas com os dois passos para começar: cadastrar o primeiro gasto e definir o teto |
-| 🔄 | **Atualizar pelo app** | Config → Atualizar: confere a última versão no GitHub, baixa e abre o instalador. O download **continua de onde parou** se a internet cair, se você sair da tela ou até se fechar o app, e o SHA-256 é conferido antes de instalar |
+| 🔄 | **Atualizar pelo app** | Config → Atualizar: confere a última versão no GitHub, baixa e abre o instalador. O download **continua de onde parou** se a internet cair, se você sair da tela ou até se fechar o app, e o SHA-256 é conferido antes de instalar. Ao achar uma versão nova, mostra as novidades dela (o arquivo `NOVIDADES.md`, publicado como texto da release) |
 | 🔔 | **Aviso de versão nova** | A cada ~12h o app dá uma espiada no GitHub e notifica se saiu versão nova |
 
 ## Previsão de gastos
@@ -219,7 +220,7 @@ lib/
     ├── graficos/          #   dados dos 8 gráficos (puros) e a tela
     ├── backup/ · config/  #   backup, fundo, teto, atualizar
     └── inicio/            #   carga inicial, tela de erro e abas
-test/                      # 186 testes (unidade e widget)
+test/                      # 192 testes (unidade e widget)
 tool/make_icon.py          # gera o ícone (calendário nas cores do Brasil)
 ```
 
@@ -235,7 +236,7 @@ tool/make_icon.py          # gera o ícone (calendário nas cores do Brasil)
 
 ```bash
 flutter pub get
-flutter test        # 186 testes
+flutter test        # 192 testes
 flutter run         # com um celular ou emulador Android conectado
 ```
 

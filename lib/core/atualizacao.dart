@@ -20,7 +20,10 @@ class Release {
 
   /// SHA-256 do APK informado pelo GitHub, para conferir o download.
   final String? sha256;
-  const Release(this.build, this.tag, this.apk, [this.sha256]);
+
+  /// Novidades da versão (o texto da release); vazio se não houver.
+  final String notas;
+  const Release(this.build, this.tag, this.apk, [this.sha256, this.notas = '']);
 
   /// Lê a resposta de /releases/latest. Lança [FormatException] se a release
   /// não tiver número de build na tag ou não tiver APK.
@@ -54,8 +57,20 @@ class Release {
         apk['browser_download_url'] as String,
         digest != null && digest.startsWith('sha256:')
             ? digest.substring(7)
-            : null);
+            : null,
+        notasDe(j['body'] as String?));
   }
+}
+
+/// Texto da release sem a linha automática "**Full Changelog**: …" e
+/// limitado a 2.000 caracteres.
+String notasDe(String? body) {
+  final t = (body ?? '')
+      .split('\n')
+      .where((l) => !l.trimLeft().startsWith('**Full Changelog**'))
+      .join('\n')
+      .trim();
+  return t.length > 2000 ? '${t.substring(0, 2000)}…' : t;
 }
 
 /// Só letras, números, "_", "." e "-" ("v1.0.0-14"), e não só pontos.
