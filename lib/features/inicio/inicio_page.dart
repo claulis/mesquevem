@@ -5,6 +5,7 @@ import '../../core/confirmar.dart';
 import '../../core/ambiente.dart';
 import '../../core/salvar.dart';
 import '../../data/repositorio.dart';
+import '../../state/nuvem.dart';
 import '../../state/store.dart';
 import 'principal_page.dart';
 
@@ -26,8 +27,12 @@ class _InicioPageState extends State<InicioPage> {
     super.initState();
     _store = context.read<Store>();
     _carga = _store.carregar();
+    // opcional: os testes montam o app sem ela
+    final nuvem = context.read<Nuvem?>();
     _ciclo = AppLifecycleListener(
-        onResume: () => _store.lancarRecorrentes().catchError((_) {}));
+        onResume: () => _store.lancarRecorrentes().catchError((_) {}),
+        // indo para segundo plano: backup automático no Drive, se logado
+        onPause: () => nuvem?.aoPausar());
   }
 
   @override

@@ -16,7 +16,7 @@
 [![SharedPreferences](https://img.shields.io/badge/dados-SharedPreferences-00897B)](https://pub.dev/packages/shared_preferences)
 [![GitHub Actions](https://img.shields.io/badge/CI-GitHub%20Actions-2088FF?logo=githubactions&logoColor=white)](https://github.com/claulis/mesquevem/actions)
 [![Release](https://img.shields.io/github/v/release/claulis/mesquevem?label=vers%C3%A3o&color=009C3B)](https://github.com/claulis/mesquevem/releases/latest)
-[![Testes](https://img.shields.io/badge/testes-192%20passando-brightgreen)](test)
+[![Testes](https://img.shields.io/badge/testes-203%20passando-brightgreen)](test)
 [![Feito com](https://img.shields.io/badge/feito%20com-%E2%98%95%20e%20boletos-FFDF00)](#)
 
 </div>
@@ -33,7 +33,7 @@ Você registra os gastos do dia a dia e o app:
 - 🚦 **avisa** quando uma categoria ou o mês inteiro está passando do combinado;
 - 💡 **dá palpites** (insights) do tipo "no ritmo atual você fecha o mês em R$ 3.200".
 
-Tudo **offline** e no próprio celular. Sem cadastro, sem nuvem, sem ninguém vendendo seus gastos com pizza para anunciante.
+Tudo **offline** e no próprio celular. Sem cadastro obrigatório e sem servidor nosso: se quiser, entre com a conta Google para guardar um backup no **seu** Drive. Ninguém vende seus gastos com pizza para anunciante.
 
 ## Funcionalidades
 
@@ -55,6 +55,7 @@ Tudo **offline** e no próprio celular. Sem cadastro, sem nuvem, sem ninguém ve
 | 📊 | **Gráficos** | Botão 📊 na tela principal, para o mês que estiver na tela: últimos 6 meses com o teto e a previsão, ritmo do mês (gasto acumulado contra o ritmo ideal ou o mês anterior), gasto por pessoa (pizza com o total do mês até agora, nome e %, com os gastos sem gastador rateados entre as pessoas), categorias contra a média de 3 meses, mapa de calor dos dias (verde, amarelo e vermelho; com teto, o amarelo é o quanto cabe por dia), custo por evento (este ano e o anterior), composição por categoria e gasto por dia da semana. Tocar numa barra ou num dia mostra o valor, e o ⓘ de cada gráfico explica como lê-lo |
 | 🔮 | **Previsão** | Três métodos estatísticos que se revezam conforme o histórico cresce (veja a seção Previsão de gastos) |
 | 💾 | **Backup e compartilhamento** | Exporta e importa um JSON, ou manda direto pelo WhatsApp, e-mail ou Drive |
+| ☁️ | **Backup no Google Drive** | Opcional. Em Config → Backup, "Entrar com Google" guarda sozinho uma cópia dos dados no seu Drive (pasta oculta, só o app vê) sempre que você sai do app. Num celular novo, entre com a mesma conta e restaure. Precisa da configuração do Google Cloud (ver [Login Google](#login-google)) |
 | 🖼️ | **Fundo personalizado** | *"Coloque uma imagem de quem, ou que, te inspira a gastar menos ou de quem, ou que, te faz gastar mais 😄"*. A opacidade da imagem é ajustável de 5% a 100%, com prévia |
 | 🌙 | **Tema escuro** | Segue o modo claro/escuro do celular |
 | 👋 | **Primeiro uso** | Sem nenhum gasto, a tela principal mostra boas-vindas com os dois passos para começar: cadastrar o primeiro gasto e definir o teto |
@@ -197,7 +198,27 @@ flowchart TD
 - **Transferência retomável.** O `Atualizador` mantém em disco o arquivo parcial e seus metadados (tamanho total e `ETag`). Após uma falha de rede, retoma com `Range: bytes=N-` condicionado por `If-Range` (RFC 9110): o servidor só continua se o recurso for o mesmo; caso contrário, a transferência recomeça do início. As tentativas seguem espera crescente (backoff), e um download interrompido é retomado na próxima abertura do aplicativo.
 - **Integridade.** O tamanho e o SHA-256 do arquivo são conferidos contra o resumo informado pela API antes da instalação.
 - **Autenticidade.** O APK é assinado com uma chave fixa, mantida fora do repositório, o que permite ao Android reconhecer a atualização como sucessora do pacote instalado e preservar os dados.
+- **Novidades.** O texto da release vem de `NOVIDADES.md` e aparece na tela de atualização.
 - **Aviso de nova versão.** Tarefa periódica (WorkManager, cerca de 12 h, condicionada à rede) que emite uma notificação local uma única vez por versão.
+
+### Login Google
+
+O backup no Drive usa o `google_sign_in` só para entrar e obter o token do escopo `drive.appdata`. As chamadas ao Drive são REST, com o `HttpClient` (`core/drive.dart`). Para funcionar, o dono do repositório configura uma vez:
+
+1. Em [console.cloud.google.com](https://console.cloud.google.com), crie um projeto e ative a **Google Drive API**.
+2. Em **Tela de consentimento OAuth**:
+   - escolha **Externo**, status **Em teste**, com o escopo `https://www.googleapis.com/auth/drive.appdata`;
+   - em **Usuários de teste**, coloque os e-mails da família (até 100). Só esses e-mails conseguem entrar.
+3. Em **Credenciais → Criar ID do cliente OAuth → Aplicativo da Web**, copie o *Client ID* e salve no GitHub em **Settings → Secrets and variables → Actions → Variables** como `GOOGLE_CLIENT_ID`. Client ID não é segredo.
+4. Em **Credenciais → Criar ID do cliente OAuth → Android**:
+   - informe o pacote `com.example.compras`;
+   - informe o **SHA-1** da chave de assinatura, obtido no computador onde está a chave:
+
+```bash
+keytool -list -v -keystore release.jks -alias SEU_ALIAS
+```
+
+Sem a variável `GOOGLE_CLIENT_ID`, o APK é gerado normalmente e a tela de backup diz que o Google Drive não está configurado nesta versão.
 
 ### Estrutura
 
@@ -213,14 +234,14 @@ lib/
 │   ├── compra.dart · gastador.dart
 │   ├── repositorio.dart   #   Dados (v3), migração, interface
 │   └── repositorio_prefs.dart
-├── state/                 # Store (regras), Fundo, Privacidade e Atualizador
+├── state/                 # Store (regras), Fundo, Privacidade, Atualizador e Nuvem (backup no Drive)
 └── features/              # uma pasta por tela
     ├── previsao/          #   home, previsão, resumo, insights (regras e tela)
     ├── compras/ · categorias/ · gastadores/
     ├── graficos/          #   dados dos 8 gráficos (puros) e a tela
     ├── backup/ · config/  #   backup, fundo, teto, atualizar
     └── inicio/            #   carga inicial, tela de erro e abas
-test/                      # 192 testes (unidade e widget)
+test/                      # 203 testes (unidade e widget)
 tool/make_icon.py          # gera o ícone (calendário nas cores do Brasil)
 ```
 
@@ -236,7 +257,7 @@ tool/make_icon.py          # gera o ícone (calendário nas cores do Brasil)
 
 ```bash
 flutter pub get
-flutter test        # 192 testes
+flutter test        # 203 testes
 flutter run         # com um celular ou emulador Android conectado
 ```
 
@@ -251,7 +272,7 @@ Não. Ele só prevê que você vai gastar o dinheiro antes de ganhar.
 Porque é mais honesto.
 
 **Meus dados vão para algum servidor?**
-Não. Ficam no celular. O app só fala com a internet para perguntar ao GitHub se há versão nova.
+Não para um servidor nosso. Ficam no celular, e o app fala com o GitHub para saber se há versão nova. Se você entrar com a conta Google, uma cópia dos dados vai para o **seu** Google Drive, numa pasta que só o app enxerga.
 
 **A previsão errou feio em dezembro!**
 Com menos de 24 meses de histórico ela ainda não conhece o Natal da sua família. Dê tempo a ela. 🎅

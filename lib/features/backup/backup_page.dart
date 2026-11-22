@@ -7,8 +7,10 @@ import 'package:share_plus/share_plus.dart';
 import '../../core/confirmar.dart';
 import '../../core/ambiente.dart';
 import '../../core/erros.dart';
+import '../../core/format.dart';
 import '../../core/salvar.dart';
 import '../../data/repositorio.dart';
+import '../../state/nuvem.dart';
 import '../../state/store.dart';
 
 /// Devolve false se o usuário cancelou.
@@ -139,6 +141,11 @@ class BackupPage extends StatelessWidget {
     return Scaffold(
       appBar: AppBar(title: const Text('Backup e compartilhamento')),
       body: ListView(padding: const EdgeInsets.all(16), children: [
+        // opcional: os testes montam a tela sem ela
+        if (context.watch<Nuvem?>() case final n?) ...[
+          SecaoDrive(n),
+          const Divider(height: 32),
+        ],
         Text(
             'Neste aparelho: ${store.compras.length} gastos e $nCat categorias.'),
         const SizedBox(height: 8),
@@ -163,5 +170,109 @@ class BackupPage extends StatelessWidget {
             onPressed: () => _importar(context)),
       ]),
     );
+  }
+}
+
+String _quando(DateTime d) => '${fmtData(d)} '
+    '${d.hour.toString().padLeft(2, '0')}:${d.minute.toString().padLeft(2, '0')}';
+
+/// Login Google e backup automático no Drive (pasta oculta do app).
+class SecaoDrive extends StatelessWidget {
+  final Nuvem nuvem;
+  const SecaoDrive(this.nuvem, {super.key});
+
+  Future<void> _entrar(BuildContext context) async {
+    final store = context.read<Store>();
+    if (!await avisandoFalha(context, nuvem.entrar,
+        falha: 'Não foi possível entrar')) {
+      return;
+    }
+    // aparelho novo (sem gastos): oferece trazer o backup do Drive
+    if (store.compras.isEmpty && context.mounted) {
+      await _restaurar(context, soSeHouver: true);
+    }
+  }
+
+  Future<void> _restaurar(BuildContext context,
+      {bool soSeHouver = false}) async {
+    final store = context.read<Store>();
+    final msg = ScaffoldMessenger.of(context);
+    ({Dados dados, DateTime quando})? b;
+    if (!await avisandoFalha(context, () async => b = await nuvem.baixar(),
+        falha: 'Não foi possível restaurar, nada foi alterado')) {
+      return;
+    }
+    final lido = b;
+    if (lido == null) {
+      if (!soSeHouver) {
+        msg.showSnackBar(
+            const SnackBar(content: Text('Ainda não há backup no Drive')));
+      }
+      return;
+    }
+    if (!context.mounted) return;
+    final ok = await confirmar(
+        context,
+        'Substituir TODOS os dados atuais (${store.compras.length} gastos e '
+        'categorias) pelos do backup do Drive de ${_quando(lido.quando)} '
+        '(${lido.dados.compras.length} gastos)?',
+        acao: 'Restaurar');
+    if (!ok || !context.mounted) return;
+    if (await avisandoFalha(context, () => store.importar(lido.dados),
+        falha: 'Não foi possível restaurar, nada foi alterado')) {
+      msg.showSnackBar(const SnackBar(content: Text('Dados restaurados')));
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final tema = Theme.of(context);
+    final n = nuvem;
+    final pequeno = tema.textTheme.bodySmall;
+    return Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+      Text('Google Drive', style: tema.textTheme.titleMedium),
+      const SizedBox(height: 8),
+      if (!n.configurado)
+        Text('Backup no Google Drive não configurado nesta versão.',
+            style: pequeno)
+      else if (n.email == null) ...[
+        Text(
+            'Entre com a sua conta Google para guardar uma cópia automática '
+            'dos dados no seu Drive (pasta oculta, só o app vê).',
+            style: pequeno),
+        const SizedBox(height: 8),
+        FilledButton.icon(
+            icon: const Icon(Icons.login),
+            label: const Text('Entrar com Google'),
+            onPressed: n.ocupado ? null : () => _entrar(context)),
+      ] else ...[
+        Text('Conta: ${n.email}'),
+        Text(n.ultimoBackup == null
+            ? 'Ainda sem backup no Drive'
+            : 'Último backup: ${_quando(n.ultimoBackup!)}'),
+        Text('O backup é feito sozinho quando você sai do app.',
+            style: pequeno),
+        if (n.erro != null)
+          Text('Último backup automático falhou: ${n.erro}',
+              style: TextStyle(color: tema.colorScheme.error)),
+        const SizedBox(height: 8),
+        FilledButton.icon(
+            icon: const Icon(Icons.cloud_upload),
+            label: Text(n.ocupado ? 'Enviando…' : 'Fazer backup agora'),
+            onPressed: n.ocupado
+                ? null
+                : () => avisandoFalha(context, n.backupAgora,
+                    falha: 'Não foi possível fazer o backup')),
+        const SizedBox(height: 8),
+        OutlinedButton.icon(
+            icon: const Icon(Icons.cloud_download),
+            label: const Text('Restaurar do Drive'),
+            onPressed: n.ocupado ? null : () => _restaurar(context)),
+        TextButton.icon(
+            icon: const Icon(Icons.logout),
+            label: const Text('Sair da conta'),
+            onPressed: n.ocupado ? null : n.sair),
+      ],
+    ]);
   }
 }
